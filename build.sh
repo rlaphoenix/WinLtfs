@@ -1,8 +1,9 @@
 #!/bin/bash
 # winltfs build driver. Run inside an MSYS2 MINGW64 shell after setup.sh:
-#   ./build.sh       # build everything and stage dist/
-#   ./build.sh make  # just compile the LTFS tree
-#   ./build.sh dist  # just (re)stage dist/
+#   ./build.sh          # build everything and stage dist/
+#   ./build.sh make     # just compile the LTFS tree
+#   ./build.sh shellext # just the Explorer shell extension
+#   ./build.sh dist     # just (re)stage dist/
 #   ./build.sh clean
 set -uo pipefail
 
@@ -13,6 +14,15 @@ DIST="${DIST:-$ROOT/dist}"   # override with DIST=... to stage elsewhere
 do_make() {
     cd "$SRC"
     make -j"$(nproc)"
+}
+
+do_shellext() {
+    cd "$ROOT/shellext"
+    x86_64-w64-mingw32-g++ -O2 -shared -fno-exceptions -fno-rtti \
+        -static -static-libgcc -static-libstdc++ \
+        -o winltfs_shellext.dll winltfs_shellext.cpp winltfs_shellext.def \
+        -lole32 -luuid -lshell32 -ladvapi32 -luser32
+    echo "shell extension built"
 }
 
 do_dist() {
@@ -30,6 +40,8 @@ do_dist() {
        "$SRC/src/kmi/.libs/libkmi-flatfile.dll" \
        "$SRC/src/kmi/.libs/libkmi-simple.dll" \
        "$DIST/"
+    cp "$ROOT/shellext/winltfs_shellext.dll" "$DIST/" 2>/dev/null \
+        || echo "    (shell extension not built)"
     cp "$SRC"/messages/lib*.dll "$DIST/"          # ICU message catalogs
     cp "$ROOT/build/wfsp/bin/winfsp-x64.dll" "$DIST/"
 
@@ -69,8 +81,9 @@ EOF
 cmd=${1:-all}
 case "$cmd" in
 make)      do_make ;;
+shellext)  do_shellext ;;
 dist)      do_dist ;;
-all)       do_make && do_dist ;;
+all)       do_make && do_shellext && do_dist ;;
 clean)     cd "$SRC" && make clean ;;
-*)         echo "usage: build.sh [all|make|dist|clean]" >&2; exit 2 ;;
+*)         echo "usage: build.sh [all|make|shellext|dist|clean]" >&2; exit 2 ;;
 esac
