@@ -550,8 +550,20 @@ void set_drive_presentation(const char *letter, const char *label, enum drive_st
 	if (module_sibling_path(drive_state_icon(state), iconpath, sizeof(iconpath)))
 		icon = iconpath;
 
-	for (i = 0; i < sizeof(drive_present_roots) / sizeof(drive_present_roots[0]); i++)
-		set_one_presentation(drive_present_roots[i], letter, label, icon);
+	for (i = 0; i < sizeof(drive_present_roots) / sizeof(drive_present_roots[0]); i++) {
+		HKEY root = drive_present_roots[i];
+		char mkey[64];
+		HKEY key;
+
+		set_one_presentation(root, letter, label, icon);
+
+		snprintf(mkey, sizeof(mkey), "Software\\WinLtfs\\Drives\\%s", letter);
+		if (RegCreateKeyExA(root, mkey, 0, NULL, 0, KEY_SET_VALUE, NULL, &key, NULL) == ERROR_SUCCESS) {
+			const char *v = label ? label : "";
+			RegSetValueExA(key, NULL, 0, REG_SZ, (const BYTE *)v, (DWORD)(strlen(v) + 1));
+			RegCloseKey(key);
+		}
+	}
 
 	SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
 }
@@ -564,7 +576,11 @@ void clear_drive_presentation(const char *letter)
 		return;
 	snprintf(subkey, sizeof(subkey),
 		"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\DriveIcons\\%s", letter);
-	for (i = 0; i < sizeof(drive_present_roots) / sizeof(drive_present_roots[0]); i++)
+	for (i = 0; i < sizeof(drive_present_roots) / sizeof(drive_present_roots[0]); i++) {
+		char mkey[64];
 		RegDeleteTreeA(drive_present_roots[i], subkey);   /* removes DefaultLabel + DefaultIcon */
+		snprintf(mkey, sizeof(mkey), "Software\\WinLtfs\\Drives\\%s", letter);
+		RegDeleteKeyA(drive_present_roots[i], mkey);      /* drop the shell-extension marker */
+	}
 	SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
 }
