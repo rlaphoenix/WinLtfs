@@ -13,25 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Read-only tape attributes (MAM) exposed through WinFsp, with MAM discovery and paged attribute queries.
 - Inno Setup installer bundling WinFsp.
-- WinLtfs version in the `ltfs`, `mkltfs` and `ltfsck` startup logs and the generated `ltfs.conf`.
-
-### Changed
-
-- Attribute request operations now use SCSI service action numbering (0 reads a value, 1 lists IDs).
-- Attribute value and list pages only read the bytes they need.
-
-### Removed
-
-- Python tools and test scripts.
+- WinLtfs version in the `ltfs`, `mkltfs`, `unltfs` and `ltfsck` startup logs.
 
 ### Fixed
 
 - Target Windows 7 SP1 / Server 2008 R2 SP1.
 - Block creation of the `$RECYCLE.BIN` folder on the mounted tape.
-- Reject MAM queries when the backend lacks `read_mam`.
-- Return `LTFS_NO_XATTR` for bad attribute IDs.
-- Truncate MAM values to the buffer size like a real drive.
-- Treat deleted MAM attributes as missing.
 - Clear stale sense data before every SCSI command.
 - `strcasestr` is now case-insensitive.
 
