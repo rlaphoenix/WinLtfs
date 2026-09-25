@@ -3,6 +3,7 @@
 #   ./build.sh           # build everything and stage dist/
 #   ./build.sh make      # just compile the LTFS tree
 #   ./build.sh filedebug # just the file-emulator backend
+#   ./build.sh shellext  # just the Explorer shell extension
 #   ./build.sh dist      # just (re)stage dist/
 #   ./build.sh clean
 set -uo pipefail
@@ -35,6 +36,15 @@ do_filedebug() {
     echo "filedebug backend built"
 }
 
+do_shellext() {
+    cd "$ROOT/shellext"
+    x86_64-w64-mingw32-g++ -O2 -shared -fno-exceptions -fno-rtti \
+        -static -static-libgcc -static-libstdc++ \
+        -o winltfs_shellext.dll winltfs_shellext.cpp winltfs_shellext.def \
+        -lole32 -luuid -lshell32 -ladvapi32 -luser32
+    echo "shell extension built"
+}
+
 do_dist() {
     mkdir -p "$DIST"
     echo "==> Staging executables and plugins"
@@ -51,6 +61,8 @@ do_dist() {
        "$DIST/"
     cp "$SRC/src/tape_drivers/generic/file/libdriver-file.dll" "$DIST/" 2>/dev/null \
         || echo "    (filedebug backend not built - emulator unavailable)"
+    cp "$ROOT/shellext/winltfs_shellext.dll" "$DIST/" 2>/dev/null \
+        || echo "    (shell extension not built)"
     cp "$SRC"/messages/lib*.dll "$DIST/"          # ICU message catalogs
     cp "$ROOT/build/wfsp/bin/winfsp-x64.dll" "$DIST/"
 
@@ -91,8 +103,9 @@ cmd=${1:-all}
 case "$cmd" in
 make)      do_make ;;
 filedebug) do_filedebug ;;
+shellext)  do_shellext ;;
 dist)      do_dist ;;
-all)       do_make && do_filedebug && do_dist ;;
+all)       do_make && do_filedebug && do_shellext && do_dist ;;
 clean)     cd "$SRC" && make clean ;;
-*)         echo "usage: build.sh [all|make|filedebug|dist|clean]" >&2; exit 2 ;;
+*)         echo "usage: build.sh [all|make|filedebug|shellext|dist|clean]" >&2; exit 2 ;;
 esac
