@@ -203,6 +203,9 @@ struct device_data;
 #define LTFS_VENDOR_NAME              "IBM "
 #define SOFTWARE_PRODUCT_NAME         "LTFS SDE"
 #endif
+
+#define WINLTFS_VERSION               "1.2.0"
+
 #define LTFS_LOSTANDFOUND_DIR         "_ltfs_lostandfound"
 
 #if 0

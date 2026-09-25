@@ -246,6 +246,7 @@ int main(int argc, char **argv)
 		log_level = LTFS_TRACE;
 	ltfs_set_log_level(log_level);
 
+	ltfsmsg(LTFS_INFO, "15059I", "WinLtfs", WINLTFS_VERSION);
 	ltfsmsg(LTFS_INFO, "15495I");
 
 	if (_unltfs_validate_options(argv[0], &opt)) {

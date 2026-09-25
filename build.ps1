@@ -3,7 +3,7 @@ param(
     [switch]$SkipInstaller,
     [switch]$AutoInstallInnoSetup,
     [ValidatePattern('^\d+\.\d+\.\d+(\.\d+)?$')]
-    [string]$Version = '0.0.0',
+    [string]$Version,
     [string]$Msys2Root = $env:MSYS2_ROOT
 )
 
@@ -67,6 +67,10 @@ function Resolve-WinFspMsi {
     if ($actual -ne $WinFsp.Sha256) {
         throw "SHA256 mismatch for $($WinFsp.File): got $actual, expected $($WinFsp.Sha256)."
     }
+}
+
+if (-not $Version) {
+    $Version = (Select-String -Path (Join-Path $Root 'ltfs\src\libltfs\ltfs.h') -Pattern '^#define WINLTFS_VERSION\s+"(.+)"').Matches[0].Groups[1].Value
 }
 
 $sw = [System.Diagnostics.Stopwatch]::StartNew()

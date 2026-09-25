@@ -689,6 +689,7 @@ int main(int argc, char **argv)
 	ltfs_set_log_level(priv->verbose % 100);
 
 	/* LTFS starting */
+	ltfsmsg(LTFS_INFO, "14058I", "WinLtfs", WINLTFS_VERSION);
 	ltfsmsg(LTFS_INFO, "14000I", LTFS_VENDOR_NAME SOFTWARE_PRODUCT_NAME, PACKAGE_VERSION, priv->verbose);
 	ltfsmsg(LTFS_INFO, "14058I", "LTFS Format Specification", LTFS_INDEX_VERSION_STR);
 
