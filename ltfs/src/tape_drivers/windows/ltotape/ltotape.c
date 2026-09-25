@@ -1790,6 +1790,58 @@ int ltotape_allow_medium_removal(void *device)
 }
 
 /**------------------------------------------------------------------------**
+ * Raw, bounded READ ATTRIBUTE for complete MAM discovery and binary values
+ * @param device a pointer to the ltotape backend
+ * @param part partition to read attribute (0 or 1)
+ * @param action SCSI service action: 0 for attribute values, 1 for attribute list
+ * @param id first attribute id to return
+ * @param buf pointer to the response buffer, including the four-byte header
+ * @param size length of the buffer
+ * @param received set to the number of bytes transferred
+ * @return 0 on success or a negative value on error
+ */
+static int ltotape_read_mam(void *device, const tape_partition_t part, uint8_t action,
+    uint16_t id, unsigned char *buf, size_t size, size_t *received)
+{
+    ltotape_scsi_io_type *sio = (ltotape_scsi_io_type *)device;
+    int status;
+    *received = 0;
+    if (part > 1 || action > 1 || size < 4 || size > TAPE_MAM_MAX_SIZE)
+        return -LTFS_BAD_ARG;
+    if (sio->family == drivefamily_dat)
+        return -LTFS_UNSUPPORTED;
+    memset(buf, 0, size);
+    memset(sio->cdb, 0, 16);
+    sio->cdb[0] = CMDread_attribute;
+    sio->cdb[1] = action;
+    sio->cdb[7] = (unsigned char)part;
+    sio->cdb[8] = (unsigned char)(id >> 8);
+    sio->cdb[9] = (unsigned char)id;
+    sio->cdb[10] = (unsigned char)(size >> 24);
+    sio->cdb[11] = (unsigned char)(size >> 16);
+    sio->cdb[12] = (unsigned char)(size >> 8);
+    sio->cdb[13] = (unsigned char)size;
+    sio->cdb_length = 16;
+    sio->data = buf;
+    sio->data_length = size;
+    sio->actual_data_length = 0;
+    sio->data_direction = HOST_READ;
+    sio->timeout_ms = LTO_READATTRIB_TIMEOUT;
+    status = ltotape_scsiexec(sio);
+    if (!status) {
+        if (sio->actual_data_length < 4 || (size_t)sio->actual_data_length > size)
+            status = -LTFS_UNEXPECTED_VALUE;
+        else
+            *received = sio->actual_data_length;
+    } else if (status < 0 && SENSE_IS_BAD_ATTRIBID(sio->sensedata)) {
+        status = -LTFS_NO_XATTR;
+    }
+    sio->data = NULL;
+    sio->data_length = 0;
+    return status;
+}
+
+/**------------------------------------------------------------------------**
  * Read attribute
  * @param device a pointer to the ltotape backend
  * @param part partition to read attribute
@@ -3300,6 +3352,7 @@ struct tape_ops ltotape_drive_handler = {
         .prevent_medium_removal = ltotape_prevent_medium_removal,
         .allow_medium_removal   = ltotape_allow_medium_removal,
         .read_attribute         = ltotape_read_attribute,
+        .read_mam               = ltotape_read_mam,
         .write_attribute        = ltotape_write_attribute,
         .allow_overwrite        = ltotape_allow_overwrite,
         .report_density         = ltotape_report_density,

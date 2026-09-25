@@ -1273,6 +1273,15 @@ int ltfs_fuse_listxattr(const char *path, char *list, size_t size)
 
 	ltfsmsg(LTFS_DEBUG, "14052D", path);
 
+#ifdef mingw_PLATFORM
+	/* Revalidate the mounted medium before publishing its root metadata. */
+	if (!strcmp(path, "/")) {
+		ret = ltfs_test_unit_ready(priv->data);
+		if (ret < 0)
+			return errormap_fuse_error(ret);
+	}
+#endif
+
 	ret = ltfs_fsops_listxattr(path, list, size, &id, priv->data);
 
 #if 0
@@ -1832,7 +1841,187 @@ int ltfs_fuse_readlink(const char* path, char* buf, size_t size)
 	return errormap_fuse_error(ret);
 }
 
+#ifdef mingw_PLATFORM
+/* Read-only WinFsp control interface.
+ * Fixed output-only commands for named attributes, plus a bounded MAM reader.
+ * No arbitrary xattr names, setters, or filesystem mutations are accepted.
+ */
+#include "libltfs/attr_ioctl.h"
+#include "libltfs/mam_ioctl.h"
+#include "libltfs/tape.h"
+
+#define ATTR_IOCTL_MAGIC 0x4c6e6957 /* "WinL" when read as little-endian bytes */
+
+struct attr_ioctl_response {
+    uint32_t magic;
+    uint32_t version;
+    int32_t status;             /* raw LTFS error, or 0 */
+    uint32_t length;
+    char volume_uuid[40];      /* binds separate replies to one mounted volume */
+    char reserved[8];          /* v1: zero; v2: total length and byte offset */
+    char value[4032];          /* v1: UTF-8; v2: raw MAM payload */
+};
+typedef char attr_ioctl_response_size_check[sizeof(struct attr_ioctl_response) == 4096 ? 1 : -1];
+typedef char mam_ioctl_request_size_check[sizeof(struct mam_ioctl_request) == 16 ? 1 : -1];
+
+static int mam_ioctl_query(struct ltfs_volume *vol, const char *path,
+    unsigned int flags, void *data)
+{
+    struct mam_ioctl_request request;
+    struct attr_ioctl_response *response = data;
+    unsigned char *raw;
+    size_t received = 0, length = 0, size, count, i;
+    uint32_t total;
+    char uuid[36];
+    int ret, status;
+    if (flags || !data || !path || !vol || strcmp(path, "/"))
+        return -EINVAL;
+    /* WinFsp uses one METHOD_BUFFERED buffer for input and output. */
+    memcpy(&request, data, sizeof(request));
+    if (!mam_ioctl_request_valid(&request))
+        return -EINVAL;
+    if (!vol->device || !vol->device->backend->read_mam)
+        return -ENOTTY;
+    for (i = sizeof(request); i < sizeof(*response); ++i)
+        if (((const unsigned char *)data)[i])
+            return -EINVAL;
+    memset(response, 0, sizeof(*response));
+    response->magic = ATTR_IOCTL_MAGIC;
+    response->version = 2;
+    ret = ltfs_test_unit_ready(vol);
+    if (ret < 0)
+        return errormap_fuse_error(ret);
+    size = mam_ioctl_alloc(&request);
+    raw = calloc(1, size);
+    if (!raw)
+        return -ENOMEM;
+    ret = ltfs_get_volume_lock(false, vol);
+    if (ret < 0) {
+        free(raw);
+        return errormap_fuse_error(ret);
+    }
+    if (!vol->label || !vol->device) {
+        releaseread_mrsw(&vol->lock);
+        free(raw);
+        return -EIO;
+    }
+    memcpy(uuid, vol->label->vol_uuid, sizeof(uuid));
+    ret = tape_device_lock(vol->device);
+    if (!ret) {
+        ret = vol->device->backend->read_mam(vol->device->backend_data,
+            request.partition, request.operation, request.attribute,
+            raw, size, &received);
+        if (NEED_REVAL(ret)) {
+            tape_start_fence(vol->device);
+            tape_device_unlock(vol->device);
+            /* Revalidation consumes the volume lock; never publish old bytes. */
+            ltfs_revalidate(false, vol);
+            free(raw);
+            return -EIO;
+        }
+        if (IS_UNEXPECTED_MOVE(ret))
+            vol->reval = -LTFS_REVAL_FAILED;
+        tape_device_unlock(vol->device);
+    }
+    releaseread_mrsw(&vol->lock);
+    status = ret;
+    if (!status)
+        status = mam_ioctl_payload(raw, received, &request, &length);
+    ret = ltfs_test_unit_ready(vol);
+    if (ret < 0) {
+        free(raw);
+        return errormap_fuse_error(ret);
+    }
+    ret = ltfs_get_volume_lock(false, vol);
+    if (ret < 0) {
+        free(raw);
+        return errormap_fuse_error(ret);
+    }
+    ret = !vol->label || memcmp(uuid, vol->label->vol_uuid, sizeof(uuid));
+    releaseread_mrsw(&vol->lock);
+    if (ret) {
+        free(raw);
+        return -EIO;
+    }
+    memcpy(response->volume_uuid, uuid, sizeof(uuid));
+    response->status = status;
+    if (!status) {
+        total = (uint32_t)length;
+        memcpy(response->reserved, &total, sizeof(total));
+        memcpy(response->reserved + 4, &request.offset, sizeof(request.offset));
+        count = length - request.offset;
+        if (count > sizeof(response->value))
+            count = sizeof(response->value);
+        memcpy(response->value, raw + 4 + request.offset, count);
+        response->length = count;
+    }
+    free(raw);
+    return 0;
+}
+
+static int attr_ioctl_query(struct ltfs_volume *vol, const char *path,
+    unsigned int cmd, unsigned int flags, void *data)
+{
+    const struct attr_ioctl *attribute = NULL;
+    struct attr_ioctl_response *response = data;
+    ltfs_file_id id;
+    int ret;
+    size_t i;
+    if (flags || !data || !path || !vol)
+        return -EINVAL;
+    for (i = 0; i < ATTR_IOCTL_COUNT; ++i) {
+        if (cmd == (unsigned int)FSP_FUSE_IOCTL(attr_ioctls[i].id, 0, 4096)) {
+            attribute = &attr_ioctls[i];
+            break;
+        }
+    }
+    if (!attribute)
+        return -ENOTTY;
+    memset(response, 0, sizeof(*response));
+    response->magic = ATTR_IOCTL_MAGIC;
+    response->version = 1;
+    /* Same device handle as the mount; no tape movement unless the engine
+     * needs its normal media-change revalidation. Nothing is synchronized. */
+    ret = ltfs_test_unit_ready(vol);
+    if (ret < 0)
+        return errormap_fuse_error(ret);
+    ret = attribute->root && strcmp(path, "/") ? -LTFS_NO_XATTR :
+        ltfs_fsops_getxattr(path, attribute->name, response->value,
+            sizeof(response->value), &id, vol);
+    if (ret >= 0)
+        response->length = ret;
+    else {
+        memset(response->value, 0, sizeof(response->value));
+        response->status = ret;
+    }
+    /* Fail the entire observation after failed media revalidation, rather
+     * than presenting earlier values as a valid multi-attribute report. */
+    ret = ltfs_test_unit_ready(vol);
+    if (ret < 0)
+        return errormap_fuse_error(ret);
+    ret = ltfs_get_volume_lock(false, vol);
+    if (ret < 0)
+        return errormap_fuse_error(ret);
+    if (vol->label)
+        memcpy(response->volume_uuid, vol->label->vol_uuid, 36);
+    releaseread_mrsw(&vol->lock);
+    return 0;
+}
+
+static int ltfs_fuse_ioctl(const char *path, int cmd, void *arg,
+    struct fuse_file_info *fi, unsigned int flags, void *data)
+{
+    struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
+    if ((unsigned int)cmd == (unsigned int)FSP_FUSE_IOCTL(MAM_IOCTL_COMMAND, 4096, 4096))
+        return mam_ioctl_query(priv->data, path, flags, data);
+    return attr_ioctl_query(priv->data, path, (unsigned int)cmd, flags, data);
+}
+#endif
+
 struct fuse_operations ltfs_ops = {
+#ifdef mingw_PLATFORM
+	.ioctl       = ltfs_fuse_ioctl,
+#endif
 	.init        = ltfs_fuse_mount,
 	.destroy     = ltfs_fuse_umount,
 	.getattr     = ltfs_fuse_getattr,
