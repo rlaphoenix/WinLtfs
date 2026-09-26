@@ -84,7 +84,6 @@ void ltfs_trace_set_work_dir(const char *dir);
 int  ltfs_trace_dump(char *fname);
 int ltfs_get_trace_status(char **val);
 int ltfs_set_trace_status(char *mode);
-int ltfs_dump(char *fname);
 int ltfs_fn_trace_start(FUNCTION_TRACE_TYPE, uint32_t);
 void ltfs_admin_function_trace_completed(uint32_t);
 
@@ -137,7 +136,7 @@ void ltfs_profiler_add_entry(FILE* file, ltfs_mutex_t *mutex, uint32_t req_num);
 /*
  *  Definitions for LTFS trace file
  */
-int ltfs_dump_trace(char* name);
+#define LTFS_TRACE_FILE          "ltfs_trace.dat"
 
 /*
  *  Definitions for LTFS profiler

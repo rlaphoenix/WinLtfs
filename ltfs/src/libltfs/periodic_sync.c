@@ -85,9 +85,7 @@ ltfs_thread_return periodic_sync_thread(void* data)
 		if (! priv->keepalive)
 			break;
 
-#if 0
 		ltfs_request_trace(FUSE_REQ_ENTER(REQ_SYNC), 0, 0);
-#endif /* 0 */
 
 		ltfsmsg(LTFS_DEBUG, "17067D", "Sync-by-Time");
 		ret = ltfs_fsops_flush(NULL, false, priv->vol);
@@ -98,9 +96,7 @@ ltfs_thread_return periodic_sync_thread(void* data)
 
 		ltfs_sync_index(SYNC_PERIODIC, true, priv->vol);
 
-#if 0
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_SYNC), ret, 0);
-#endif /* 0 */
 	}
 	ltfs_thread_mutex_unlock(&priv->periodic_sync_thread_mutex);
 
