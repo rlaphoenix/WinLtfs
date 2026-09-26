@@ -70,7 +70,7 @@ function Resolve-WinFspMsi {
 }
 
 if (-not $Version) {
-    $Version = (Select-String -Path (Join-Path $Root 'ltfs\src\libltfs\ltfs.h') -Pattern '^#define WINLTFS_VERSION\s+"(.+)"').Matches[0].Groups[1].Value
+    $Version = (Select-String -Path (Join-Path $Root 'ltfs\configure.ac') -Pattern '^AC_INIT\(\[LTFS\],\[(.+?)\]').Matches[0].Groups[1].Value
 }
 
 $sw = [System.Diagnostics.Stopwatch]::StartNew()

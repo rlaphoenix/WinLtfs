@@ -161,11 +161,10 @@ struct device_data;
 
 #include "config.h"
 
-#define PACKAGE_OWNER                 "HPE LTFS"
-#define LTFS_VENDOR_NAME              "HPE "
-#define SOFTWARE_PRODUCT_NAME         "StoreOpen Software"
+#define PACKAGE_OWNER                 "WinLtfs"
+#define LTFS_VENDOR_NAME              "WinLtfs "
+#define SOFTWARE_PRODUCT_NAME         "LTFS"
 
-#define WINLTFS_VERSION               "1.2.0"
 
 #define LTFS_LOSTANDFOUND_DIR         "_ltfs_lostandfound"
 

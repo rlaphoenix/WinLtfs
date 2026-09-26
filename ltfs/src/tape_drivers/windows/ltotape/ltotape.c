@@ -2357,9 +2357,7 @@ static int ltotape_set_MAMattributes (void* device, TC_FORMAT_TYPE format, const
 
                 } else {
                         buf[4] = LTOATTRIB_APPLICATION_VENDOR_LEN;
-                        buf[5] = (unsigned char) 'H';
-                        buf[6] = (unsigned char) 'P';
-                        buf[7] = (unsigned char) 'E';
+                        memcpy(buf + 5, LTFS_VENDOR_NAME, strlen(LTFS_VENDOR_NAME));
                         len = LTOATTRIB_APPLICATION_VENDOR_LEN + ATTRIB_HEADER_LEN;
                 }
                 status = ltotape_write_attribute (device, (const tape_partition_t)0, buf, len);
@@ -2623,9 +2621,7 @@ static int ltotape_set_MAMattributes (void* device, TC_FORMAT_TYPE format, const
 
                 } else {
                         buf[4] = LTOATTRIB_APPLICATION_VENDOR_LEN;
-                        buf[5] = (unsigned char) 'H';
-                        buf[6] = (unsigned char) 'P';
-                        buf[7] = (unsigned char) 'E';
+                        memcpy(buf + 5, LTFS_VENDOR_NAME, strlen(LTFS_VENDOR_NAME));
                         len = LTOATTRIB_APPLICATION_VENDOR_LEN + ATTRIB_HEADER_LEN;
                 }
                 status = ltotape_write_attribute(device, (const tape_partition_t) 0, buf, len);

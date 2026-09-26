@@ -336,7 +336,7 @@ static int ltotape_read_drivedump (void *device, const char *fname)
 	time_t               now;
 	int                  j;
 
-	const char*          lsn = "HPE LTFS                         ";
+	const char*          lsn = "WinLtfs                          ";
 
 
 	/* Set transfer size */
@@ -511,7 +511,7 @@ static int ltotape_read_mini_drivedump (void *device, const char *fname)
 	time_t               now;
 	int                  j;
 
-	const char*          lsn = "HPE LTFS                         ";
+	const char*          lsn = "WinLtfs                          ";
 
 	/* Set transfer size */
 	transfer_size = MINI_DUMP_TRANSFER_SIZE;
@@ -696,7 +696,7 @@ static int ltotape_read_snapshot (void* device, char* fname)
 	int                  j;
 	FILE*                fp;
 	time_t               now;
-	const char*          lsn = "HPE LTFS                         ";
+	const char*          lsn = "WinLtfs                          ";
 
 /*
  * Try to get some memory for the snapshot:
