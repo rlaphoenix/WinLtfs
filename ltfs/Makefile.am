@@ -39,4 +39,4 @@
 
 nobase_pkginclude_HEADERS = config.h
 
-SUBDIRS = messages src conf init.d
+SUBDIRS = messages src conf

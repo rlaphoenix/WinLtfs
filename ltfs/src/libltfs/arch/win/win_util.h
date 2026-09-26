@@ -411,7 +411,7 @@ char *strcasestr( const char* searchstr, const char* fromstr);
 struct tm *gmtime_libltfs(const time_t *timep, struct tm *result);
 #ifndef strtok_r
 char *strtok_r(char *str, const char *delim, char **saveptr);
-#endif /* defined(HPE_mingw_BUILD) && !defined(strtok_r) */
+#endif /* !defined(strtok_r) */
 
 int win_ltfs_dummy(void);
 

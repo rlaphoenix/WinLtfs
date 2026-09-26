@@ -38,9 +38,7 @@ HPE-SOS usage
 
 1.	Build and/or install the HPE-SOS application
 
-	Installation instuctions are in INSTALLING.linux / INSTALLING.macosx
-	Information on how to build from source are in BUILDING.linux /
-        BUILDING.macosx / Building.windows 
+	Build instructions are in BUILDING.windows
 
 2.	Ensure that /usr/local/bin/ is in your command search path
 

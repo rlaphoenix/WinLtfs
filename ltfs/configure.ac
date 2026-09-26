@@ -301,7 +301,6 @@ AC_CONFIG_FILES([
     Makefile
     messages/Makefile
     conf/Makefile
-    init.d/Makefile
     src/Makefile
     src/libltfs/Makefile
     src/tape_drivers/windows/ltotape/Makefile
