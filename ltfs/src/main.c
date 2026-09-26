@@ -140,6 +140,8 @@ static struct fuse_opt ltfs_options[] = {
 	LTFS_OPT("allow_other",            allow_other, 1),
 	LTFS_OPT("noallow_other",          allow_other, 0),
 	LTFS_OPT("capture_index",          capture_index, 1),
+	LTFS_OPT("request_trace",          request_trace, 1),
+	LTFS_OPT("request_profiler",       request_profiler, 1),
 	LTFS_OPT("symlink_type=%s",        symlink_str, 0),
 	LTFS_OPT("scsi_append_only_mode=%s", str_append_only_mode, 0),
 	LTFS_OPT_KEY("-a",                 KEY_ADVANCED_HELP),
@@ -180,6 +182,8 @@ void single_drive_advanced_usage(const char *default_driver, struct ltfs_fuse_da
 	ltfsresult("14437I"); /* -o rollback_mount */
 	ltfsresult("14448I"); /* -o release_device */
 	ltfsresult("14456I"); /* -o capture_index */
+	ltfsresult("14490I"); /* -o request_trace */
+	ltfsresult("14491I"); /* -o request_profiler */
 	ltfsresult("14463I"); /* -o scsi_append_only_mode=<on|off> */
 	ltfsresult("14406I"); /* -a */
 	/* TODO: future use for WORM */
@@ -762,6 +766,11 @@ int main(int argc, char **argv)
 		priv->kmi_backend_name = NULL;
 	if (priv->work_directory == NULL || ! strcmp(priv->work_directory, ""))
 		priv->work_directory = LTFS_DEFAULT_WORK_DIR;
+	/* The request profiler streams from the in-memory request trace */
+	if (priv->request_profiler)
+		priv->request_trace = 1;
+	if (priv->request_trace)
+		ltfs_set_trace_status("on");
 	if (priv->force_min_pool) {
 		priv->min_pool_size = parse_size_t(priv->force_min_pool);
 		if (priv->min_pool_size == 0) {

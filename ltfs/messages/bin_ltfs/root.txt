@@ -268,5 +268,10 @@ root:table {
         14487I:string { "The Data and Index Partition Permanent write error bit is set in MAM " }
 		14488E:string { "Failed to find a valid index from either partition to do a read-only mount as DP_IP_PWE is set in MAM" }
 		14489E:string { "Unable to mount, out of memory or mutexes" }
+		14490I:string { "    -o request_trace          Record recent requests in memory and dump them to work directory at unmount" }
+		14491I:string { "    -o request_profiler       Stream request and I/O scheduler profiles to work directory (implies request_trace)" }
+		14492I:string { "Request trace written to %s/%s" }
+		14493W:string { "Failed to write request trace to %s/%s (%d)" }
+		14494W:string { "Failed to start request profiler in %s (%d)" }
 	}
 }

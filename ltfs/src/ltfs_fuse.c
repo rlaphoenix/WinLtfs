@@ -293,9 +293,7 @@ int ltfs_fuse_fgetattr(const char *path, struct fuse_stat *stbuf, struct fuse_fi
 	struct dentry_attr attr;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_FGETATTR), (uint64_t)fi, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG3, "14030D", _dentry_name(path, file->file_info));
 
@@ -304,10 +302,8 @@ int ltfs_fuse_fgetattr(const char *path, struct fuse_stat *stbuf, struct fuse_fi
 	if (ret == 0)
 		_ltfs_fuse_attr_to_stat(stbuf, &attr, priv);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_FGETATTR), ret,
 					   ((struct dentry *)(file->file_info->dentry_handle))->uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -319,9 +315,7 @@ int ltfs_fuse_getattr(const char *path, struct fuse_stat *stbuf)
 	ltfs_file_id id;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_GETATTR), 0, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG3, "14031D", path);
 
@@ -330,9 +324,7 @@ int ltfs_fuse_getattr(const char *path, struct fuse_stat *stbuf)
 	if (ret == 0)
 		_ltfs_fuse_attr_to_stat(stbuf, &attr, priv);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_GETATTR), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -340,10 +332,8 @@ int ltfs_fuse_getattr(const char *path, struct fuse_stat *stbuf)
 
 int ltfs_fuse_access(const char *path, int mode)
 {
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_ACCESS), 0, 0);
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_ACCESS), 0, 0);
-#endif /* 0 */
 	return 0;
 }
 
@@ -359,17 +349,13 @@ int ltfs_fuse_statfs(const char *path, struct fuse_statvfs *buf)
 	struct fuse_statvfs *stats = &priv->fs_stats;
 	struct device_capacity blockstat;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_STATFS), 0, 0);
-#endif /* 0 */
 
 	memset(&blockstat, 0, sizeof(blockstat));
 
 	ret = ltfs_capacity_data(&blockstat, priv->data);
 	if (ret < 0) {
-#if 0
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_STATFS), ret, 0);
-#endif /* 0 */
 		return errormap_fuse_error(ret);
 	}
 
@@ -382,9 +368,7 @@ int ltfs_fuse_statfs(const char *path, struct fuse_statvfs *buf)
 	*buf = *stats;
 
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_STATFS), 0, 0);
-#endif /* 0 */
 
 
 	return errormap_fuse_error(ret);;
@@ -399,9 +383,7 @@ int ltfs_fuse_open(const char *path, struct fuse_file_info *fi)
 	int ret;
 	bool open_write;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_OPEN), (uint64_t)fi->flags, 0);
-#endif /* 0 */
 
 	if ((fi->flags & O_WRONLY) == O_WRONLY)
 		ltfsmsg(LTFS_DEBUG, "14032D", path, "write-only");
@@ -414,9 +396,7 @@ int ltfs_fuse_open(const char *path, struct fuse_file_info *fi)
 	/* Open the file */
 	ret = ltfs_fsops_open(path, open_write, true, (struct dentry **)&dentry_handle, priv->data);
 	if (ret < 0) {
-#if 0
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_OPEN), ret, 0);
-#endif /* 0 */
 		return errormap_fuse_error(ret);
 	}
 
@@ -428,9 +408,7 @@ int ltfs_fuse_open(const char *path, struct fuse_file_info *fi)
 		if (file_info)
 			_file_close(file_info, priv);
 		ltfs_fsops_close(dentry_handle, false, open_write, true, priv->data);
-#if 0
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_OPEN), -ENOMEM, 0);
-#endif /* 0 */
 		return errormap_fuse_error(-LTFS_NO_MEMORY);
 	}
 
@@ -448,10 +426,8 @@ int ltfs_fuse_open(const char *path, struct fuse_file_info *fi)
 	fi->keep_cache = 1;
 #endif
 	
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_OPEN), 0,
 					   ((struct dentry *)(file->file_info->dentry_handle))->uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(0);
 }
@@ -461,17 +437,14 @@ int ltfs_fuse_release(const char *path, struct fuse_file_info *fi)
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
 	bool dirty, write_index, open_write;
-	//uint64_t uid;  HPE MD 16.10.2017 Removed as compiler warning shows this variable set but not used
+	uint64_t uid;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_RELEASE), 0, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14035D", _dentry_name(path, file->file_info));
 
-    // HPE MD 16.10.2017 Removed as compiler warning shows this variable set but not used
-	//uid = ((struct dentry *)(file->file_info->dentry_handle))->uid;
+	uid = ((struct dentry *)(file->file_info->dentry_handle))->uid;
 
 	/* Should this file's buffers be flushed? */
 	ltfs_mutex_lock(&file->lock);
@@ -497,9 +470,7 @@ int ltfs_fuse_release(const char *path, struct fuse_file_info *fi)
 	_file_close(file->file_info, priv);
 	_free_ltfs_file_handle(file);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_RELEASE), ret, uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -513,9 +484,7 @@ int ltfs_fuse_opendir(const char *path, struct fuse_file_info *fi)
 	int ret = 0;
 	bool open_write;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_OPENDIR), (uint64_t)fi->flags, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14033D", path);
 
@@ -525,9 +494,7 @@ int ltfs_fuse_opendir(const char *path, struct fuse_file_info *fi)
 	ret = ltfs_fsops_open(path, open_write, false, (struct dentry **)&dentry_handle,
 						  priv->data);
 	if (ret < 0) {
-#if 0
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_OPENDIR), ret, 0);
-#endif /* 0 */
 		return errormap_fuse_error(ret);
 	}
 
@@ -539,18 +506,14 @@ int ltfs_fuse_opendir(const char *path, struct fuse_file_info *fi)
 		if (file_info)
 			_file_close(file_info, priv);
 		ltfs_fsops_close(dentry_handle, false, false, false, priv->data);
-#if 0
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_OPENDIR), -ENOMEM, 0);
-#endif /* 0 */
 		return errormap_fuse_error(-LTFS_NO_MEMORY);
 	}
 
 	fi->fh = STRUCT_TO_FILEHANDLE(file);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_OPENDIR), 0,
 					   ((struct dentry *)(file->file_info->dentry_handle))->uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(0);
 }
@@ -559,25 +522,20 @@ int ltfs_fuse_releasedir(const char *path, struct fuse_file_info *fi)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
-	//uint64_t uid;  HPE MD 16.10.2017 Removed as compiler warning shows this variable set but not used
+	uint64_t uid;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_RELEASEDIR), 0, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14034D", _dentry_name(path, file->file_info));
 
-    // HPE MD 16.10.2017 Removed as compiler warning shows this variable set but not used
-	//uid = ((struct dentry *)(file->file_info->dentry_handle))->uid;
+	uid = ((struct dentry *)(file->file_info->dentry_handle))->uid;
 
 	ret = ltfs_fsops_close(file->file_info->dentry_handle, false, false, false, priv->data);
 
 	_file_close(file->file_info, priv);
 	_free_ltfs_file_handle(file);
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_RELEASEDIR), ret, uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -585,10 +543,8 @@ int ltfs_fuse_releasedir(const char *path, struct fuse_file_info *fi)
 /* TODO: treat this like a regular fsync? */
 int ltfs_fuse_fsyncdir(const char *path, int flags, struct fuse_file_info *fi)
 {
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_FSYNCDIR), 0, 0);
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_FSYNCDIR), 0, 0);
-#endif /* 0 */
 	return 0;
 }
 
@@ -620,17 +576,14 @@ int ltfs_fuse_fsync(const char *path, int isdatasync, struct fuse_file_info *fi)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
-	// uint64_t uid;  HPE MD 16.10.2017 Removed as compiler warning shows this variable set but not used
+	uint64_t uid;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_FSYNC), (uint64_t)isdatasync, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14036D", _dentry_name(path, file->file_info));
 	
-    // HPE MD 16.10.2017 Removed as compiler warning shows this variable set but not used
-    //uid = ((struct dentry *)(file->file_info->dentry_handle))->uid;
+	uid = ((struct dentry *)(file->file_info->dentry_handle))->uid;
 	ret = _ltfs_fuse_do_flush(file, priv, __FUNCTION__);
 
 
@@ -647,9 +600,7 @@ int ltfs_fuse_fsync(const char *path, int isdatasync, struct fuse_file_info *fi)
 	}
 
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_FSYNC), ret, uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -658,22 +609,17 @@ int ltfs_fuse_flush(const char *path, struct fuse_file_info *fi)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
-	//uint64_t uid;  HPE MD 16.10.2017 Removed as compiler warning shows this variable set but not used
+	uint64_t uid;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_FLUSH), 0, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14037D", _dentry_name(path, file->file_info));
 	
-    // HPE MD 16.10.2017 Removed as compiler warning shows this variable set but not used
-    //uid = ((struct dentry *)(file->file_info->dentry_handle))->uid;
+	uid = ((struct dentry *)(file->file_info->dentry_handle))->uid;
 	ret = _ltfs_fuse_do_flush(file, priv, __FUNCTION__);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_FLUSH), ret, uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -685,9 +631,7 @@ int ltfs_fuse_utimens(const char *path, const struct fuse_timespec ts[2])
 	ltfs_file_id id;
 	int ret = 0;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_UTIMENS), 0, 0);
-#endif /* 0 */
 
 	/* ts may be WinFsp's fuse_timespec (64-bit tv_nsec); convert field-wise. */
 	tsTmp[0].tv_sec  = ts[0].tv_sec;
@@ -704,9 +648,7 @@ int ltfs_fuse_utimens(const char *path, const struct fuse_timespec ts[2])
 	ltfsmsg(LTFS_DEBUG, "14038D", path);
 	ret = ltfs_fsops_utimens_path(path, tsTmp, &id, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_UTIMENS), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -722,16 +664,12 @@ int ltfs_fuse_chmod(const char *path, fuse_mode_t mode)
 	int ret;
 	bool new_readonly = (mode & 0222) ? false : true;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_CHMOD), (uint64_t)mode, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14039D", path);
 	ret = ltfs_fsops_set_readonly_path(path, new_readonly, &id, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_CHMOD), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -742,10 +680,8 @@ int ltfs_fuse_chmod(const char *path, fuse_mode_t mode)
  */
 int ltfs_fuse_chown(const char *path, fuse_uid_t user, fuse_gid_t group)
 {
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_CHOWN), ((uint64_t)user << 32) + group, 0);
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_CHOWN), 0, 0);
-#endif /* 0 */
 	return 0;
 }
 
@@ -758,9 +694,7 @@ int ltfs_fuse_create(const char *path, fuse_mode_t mode, struct fuse_file_info *
 	bool readonly;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_CREATE), (uint64_t)fi->flags, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14040D", path);
 
@@ -769,17 +703,13 @@ int ltfs_fuse_create(const char *path, fuse_mode_t mode, struct fuse_file_info *
 	/* Allocate file handle and information */
 	file = _new_ltfs_file_handle(NULL);
 	if (! file) {
-#if 0
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_CREATE), -ENOMEM, 0);
-#endif /* 0 */
 		return errormap_fuse_error(-LTFS_NO_MEMORY);
 	}
 	file_info = _new_file_info(path);
 	if (! file_info) {
 		_free_ltfs_file_handle(file);
-#if 0
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_CREATE), -ENOMEM, 1);
-#endif /* 0 */
 		return errormap_fuse_error(-LTFS_NO_MEMORY);
 	}
 
@@ -789,9 +719,7 @@ int ltfs_fuse_create(const char *path, fuse_mode_t mode, struct fuse_file_info *
 	if (ret < 0) {
 		_free_file_info(file_info);
 		_free_ltfs_file_handle(file);
-#if 0
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_CREATE), ret, 0);
-#endif /* 0 */
 		return errormap_fuse_error(ret);
 	}
 
@@ -814,10 +742,8 @@ int ltfs_fuse_create(const char *path, fuse_mode_t mode, struct fuse_file_info *
 	fi->keep_cache = 1;
 #endif
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_CREATE), 0,
 					   ((struct dentry *)(file->file_info->dentry_handle))->uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(0);
 }
@@ -826,29 +752,25 @@ int ltfs_fuse_mkdir(const char *path, fuse_mode_t mode)
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	void *dentry_handle;
-	//uint64_t uid = 0;  HPE MD 16.10.2017 Removed as compiler warning shows this variable set but not used
+	uint64_t uid = 0;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_MKDIR), (uint64_t)mode, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14041D", path);
 
-	if (strcasecmp(path, "/$RECYCLE.BIN") == 0)
+	if (strcasecmp(path, "/$RECYCLE.BIN") == 0) {
+		ltfs_request_trace(FUSE_REQ_EXIT(REQ_MKDIR), -EACCES, 0);
 		return -EACCES;
+	}
 
 	ret = ltfs_fsops_create(path, true, false, (struct dentry **)&dentry_handle, priv->data);
 	if (ret == 0) {
-		
-        // HPE MD 16.10.2017 Removed as compiler warning shows this variable set but not used
-        //uid = ((struct dentry *)dentry_handle)->uid;
+		uid = ((struct dentry *)dentry_handle)->uid;
 		ltfs_fsops_close(dentry_handle, false, false, false, priv->data);
 	}
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_MKDIR), ret, uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -859,17 +781,13 @@ int ltfs_fuse_truncate(const char *path, fuse_off_t length)
 	ltfs_file_id id;
 	int ret = 0;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_TRUNCATE), (uint64_t)length, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14042D", path, (long long)length);
 
 	ret = ltfs_fsops_truncate_path(path, length, &id, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_TRUNCATE), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -880,18 +798,14 @@ int ltfs_fuse_ftruncate(const char *path, fuse_off_t length, struct fuse_file_in
 	struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_FTRUNCATE), (uint64_t)length, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14043D", _dentry_name(path, file->file_info), (long long) length);
 
 	ret = ltfs_fsops_truncate(file->file_info->dentry_handle, length, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_FTRUNCATE), ret,
 					   ((struct dentry *)(file->file_info->dentry_handle))->uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -902,17 +816,13 @@ int ltfs_fuse_unlink(const char *path)
 	ltfs_file_id id;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_UNLINK), 0, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14044D", path);
 
 	ret = ltfs_fsops_unlink(path, &id, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_UNLINK), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -923,17 +833,13 @@ int ltfs_fuse_rmdir(const char *path)
 	ltfs_file_id id;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_RMDIR), 0, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14045D", path);
 
 	ret = ltfs_fsops_unlink(path, &id, priv->data);
 
-#if 0
  	ltfs_request_trace(FUSE_REQ_EXIT(REQ_RMDIR), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -944,17 +850,13 @@ int ltfs_fuse_rename(const char *from, const char *to)
 	ltfs_file_id id;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_RENAME), 0, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14046D", from, to);
 
 	ret = ltfs_fsops_rename(from, to, &id, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_RENAME), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -987,9 +889,7 @@ int ltfs_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_READDIR), (uint64_t)offset, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14047D", _dentry_name(path, file->file_info));
 
@@ -1007,10 +907,8 @@ int ltfs_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	ret = ltfs_fsops_readdir(file->file_info->dentry_handle, buf, _ltfs_fuse_filldir,
 							 filler, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_READDIR), ret,
 					   ((struct dentry *)(file->file_info->dentry_handle))->uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -1021,9 +919,7 @@ int ltfs_fuse_write(const char *path, const char *buf, size_t size, fuse_off_t o
 	struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_WRITE), (uint64_t)offset, (uint64_t)size);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG3, "14048D", _dentry_name(path, file->file_info), (long long)offset, size);
 
@@ -1046,17 +942,13 @@ int ltfs_fuse_write(const char *path, const char *buf, size_t size, fuse_off_t o
 		file->file_info->write_index = true;
 		ltfs_mutex_unlock(&file->file_info->lock);
 
-#if 0
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_WRITE), (uint64_t)size,
 						   ((struct dentry *)(file->file_info->dentry_handle))->uid);
-#endif /* 0 */
 
 		return size;
 	} else {
-#if 0
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_WRITE), (uint64_t)ret,
 						   ((struct dentry *)(file->file_info->dentry_handle))->uid);
-#endif /* 0 */
 		return errormap_fuse_error(ret);
 	}
 }
@@ -1067,18 +959,14 @@ int ltfs_fuse_read(const char *path, char *buf, size_t size, fuse_off_t offset, 
 	struct ltfs_file_handle *file = FILEHANDLE_TO_STRUCT(fi->fh);
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_READ), (uint64_t)offset, (uint64_t)size);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG3, "14049D", _dentry_name(path, file->file_info), (long long)offset, size);
 
 	ret = ltfs_fsops_read(file->file_info->dentry_handle, buf, size, offset, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_READ), (uint64_t)ret,
 					   ((struct dentry *)(file->file_info->dentry_handle))->uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -1090,9 +978,7 @@ int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, si
 	ltfs_file_id id;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_SETXATTR), (uint64_t)size, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG3, "14050D", path, name, size);
 
@@ -1103,9 +989,7 @@ int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, si
 
 	ret = ltfs_fsops_setxattr(path, name, value, size, flags, &id, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_SETXATTR), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -1116,9 +1000,7 @@ int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t s
 	ltfs_file_id id;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_GETXATTR), (uint64_t)size, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG3, "14051D", path, name);
 
@@ -1129,17 +1011,13 @@ int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t s
 	/* Short-circuit requests for system EAs to avoid mounting the same unnecessarily in
 	 * library mode. */
 	if (strstr(name, "system.") == name || strstr(name, "security.") == name) {
-#if 0
 		ltfs_request_trace(FUSE_REQ_EXIT(REQ_GETXATTR), -LTFS_NO_XATTR, 0);
-#endif /* 0 */
 		return errormap_fuse_error(-LTFS_NO_XATTR);
 	}
 
 	ret = ltfs_fsops_getxattr(path, name, value, size, &id, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_GETXATTR), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -1150,9 +1028,7 @@ int ltfs_fuse_listxattr(const char *path, char *list, size_t size)
 	ltfs_file_id id;
 	int ret;
 	
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_LISTXATTR), (uint64_t)size, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14052D", path);
 
@@ -1165,9 +1041,7 @@ int ltfs_fuse_listxattr(const char *path, char *list, size_t size)
 
 	ret = ltfs_fsops_listxattr(path, list, size, &id, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_LISTXATTR), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -1178,17 +1052,13 @@ int ltfs_fuse_removexattr(const char *path, const char *name)
 	ltfs_file_id id;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_REMOVEXATTR), 0, 0);
-#endif /* 0 */
 
 	ltfsmsg(LTFS_DEBUG, "14053D", path, name);
 
 	ret = ltfs_fsops_removexattr(path, name, &id, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_REMOVEXATTR), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -1228,9 +1098,7 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	int						iter = 0;
 	char					*index_rules_utf8 = NULL;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_MOUNT), 0, 0);
-#endif /* 0 */
 
 #if defined(FSP_FUSE_CAP_STAT_EX)
 	/* WinFsp: negotiate the extended stat so st_flags (Windows file
@@ -1561,10 +1429,13 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	if (priv->capture_index)
 		ltfs_save_index_to_disk(priv->work_directory, NULL, false, priv->data);
 
-#if 0
 	ltfs_trace_set_work_dir(priv->work_directory);
+	if (priv->request_profiler) {
+		ret = ltfs_profiler_set(PROF_REQ | PROF_IOSCHED);
+		if (ret < 0)
+			ltfsmsg(LTFS_WARN, "14494W", priv->work_directory, ret);
+	}
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_MOUNT), (uint64_t)priv, 0);
-#endif /* 0 */
 
 	/* Cartridge mounted: show its volume name and the mounted icon in Explorer. */
 	ltfs_update_drive_label(priv, DPRES_MOUNTED);
@@ -1580,9 +1451,7 @@ void ltfs_fuse_umount(void *userdata)
 {
 	struct ltfs_fuse_data *priv = userdata;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_UNMOUNT), 0, 0);
-#endif /* 0 */
 
 	/* Drop the Explorer label/icon override as the drive letter goes away. */
 	clear_drive_presentation(priv->drive_letter);
@@ -1609,10 +1478,18 @@ void ltfs_fuse_umount(void *userdata)
 	if (priv->capture_index)
 		ltfs_save_index_to_disk(priv->work_directory, SYNC_UNMOUNT, false, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_UNMOUNT), 0, 0);
-#endif /* 0 */
-	
+
+	if (priv->request_trace) {
+		int ret = ltfs_trace_dump(LTFS_TRACE_FILE);
+		if (ret < 0)
+			ltfsmsg(LTFS_WARN, "14493W", priv->work_directory, LTFS_TRACE_FILE, ret);
+		else
+			ltfsmsg(LTFS_INFO, "14492I", priv->work_directory, LTFS_TRACE_FILE);
+	}
+	if (priv->request_profiler)
+		ltfs_profiler_set(0);
+
 	/*
 	 * OSR
 	 *
@@ -1638,15 +1515,11 @@ int ltfs_fuse_symlink(const char* to, const char* from)
 	ltfs_file_id id;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_SYMLINK), 0, 0);
-#endif /* 0 */
 
 	ret = ltfs_fsops_symlink_path(to, from, &id, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_SYMLINK), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }
@@ -1657,15 +1530,11 @@ int ltfs_fuse_readlink(const char* path, char* buf, size_t size)
 	ltfs_file_id id;
 	int ret;
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_READLINK), (uint64_t)size, 0);
-#endif /* 0 */
 
 	ret = ltfs_fsops_readlink_path(path, buf, size, &id, priv->data);
 
-#if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_READLINK), ret, id.uid);
-#endif /* 0 */
 
 	return errormap_fuse_error(ret);
 }

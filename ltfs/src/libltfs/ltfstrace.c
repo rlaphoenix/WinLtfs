@@ -254,7 +254,7 @@ _time_stamp_t                 start_offset;
 struct ltfs_timespec          start;
 struct timer_info             timerinfo;
 char                          *work_dir      = NULL;
-bool                          trace_enable   = true;
+bool                          trace_enable   = false;
 
 FILE* ios_profiler;              /**< Profiler file pointer for IO scheduler */
 ltfs_mutex_t ios_profiler_lock;  /**< lock file for Profiler file access */
@@ -321,6 +321,10 @@ void ltfs_request_trace(uint32_t req_num, uint64_t info1, uint64_t info2)
 static int ltfs_fn_trace_init(void)
 {
 	acomp = (struct admin_completed *) calloc (1, sizeof(struct admin_completed));
+	if (!acomp) {
+		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+		return -LTFS_NO_MEMORY;
+	}
 	TAILQ_INIT(acomp);
 	return 0;
 }
@@ -420,26 +424,27 @@ void ltfs_admin_function_trace_completed(uint32_t tid)
 static void ltfs_function_trace_destroy(void)
 {
 	if (fs_tr_list) {
-		struct filesystem_trace_list *fsitem;
-		for (fsitem=fs_tr_list; fsitem != NULL; fsitem=fsitem->hh.next) {
+		struct filesystem_trace_list *fsitem, *fstmp;
+		HASH_ITER(hh, fs_tr_list, fsitem, fstmp) {
+			HASH_DEL(fs_tr_list, fsitem);
 			destroy_mrsw(&fsitem->fn_entry->trace_lock);
 			free(fsitem->fn_entry);
 			free(fsitem);
 		}
-		fs_tr_list = NULL;
 	}
 	if (admin_tr_list) {
-		struct admin_trace_list *aditem;
-		for (aditem=admin_tr_list; aditem != NULL; aditem=aditem->hh.next) {
+		struct admin_trace_list *aditem, *adtmp;
+		HASH_ITER(hh, admin_tr_list, aditem, adtmp) {
+			HASH_DEL(admin_tr_list, aditem);
 			destroy_mrsw(&aditem->fn_entry->trace_lock);
 			free(aditem->fn_entry);
 			free(aditem);
 		}
-		admin_tr_list = NULL;
 	}
 	if (acomp) {
 		struct admin_completed_function_trace *tailq_item;
-		TAILQ_FOREACH (tailq_item, acomp, list) {
+		while ((tailq_item = TAILQ_FIRST(acomp)) != NULL) {
+			TAILQ_REMOVE(acomp, tailq_item, list);
 			destroy_mrsw(&tailq_item->trace_lock);
 			free(tailq_item->fn_entry);
 			free(tailq_item);
@@ -499,6 +504,9 @@ int ltfs_request_profiler_start(char *worK_dir)
 	int ret;
 	char *path;
 
+	/* The request profiler streams from the request trace */
+	if (!req_trace)
+		return -LTFS_BAD_ARG;
 	if (req_trace->profiler)
 		return 0;
 
@@ -527,7 +535,7 @@ int ltfs_request_profiler_start(char *worK_dir)
 
 int ltfs_request_profiler_stop(void)
 {
-	if (req_trace->profiler) {
+	if (req_trace && req_trace->profiler) {
 		fclose(req_trace->profiler);
 		req_trace->profiler = NULL;
 	}
@@ -634,7 +642,7 @@ int ltfs_header_init(void)
 
 	/* Request trace header */
 	req_header = calloc(1, sizeof(struct request_header));
-	if (!trc_header) {
+	if (!req_header) {
 		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
 		return -LTFS_NO_MEMORY;
 	}
@@ -670,17 +678,19 @@ int ltfs_trace_init(void)
 	ret = ltfs_header_init();
 
 	/* Initalize trace structures */
-	ret = ltfs_request_trace_init();
+	if (ret == 0)
+		ret = ltfs_request_trace_init();
 
 	/* Initialize function trace structures */
-	ret = ltfs_fn_trace_init();
+	if (ret == 0)
+		ret = ltfs_fn_trace_init();
 
 	return ret;
 }
 
 int ltfs_trace_get_offset(char** val)
 {
-	return asprintf(val, "%llu", start_offset);
+	return asprintf(val, "%lld.%09ld", (long long)start_offset.tv_sec, (long)start_offset.tv_nsec);
 }
 
 void ltfs_trace_destroy(void)
@@ -706,11 +716,6 @@ void ltfs_trace_set_work_dir(const char *dir)
 	work_dir = (char *)dir;
 }
 
-int ltfs_dump(char *fname)
-{
-	return 0;
-}
-
 int ltfs_trace_dump(char *fname)
 {
 	int ret = 0, fd;
@@ -729,12 +734,11 @@ int ltfs_trace_dump(char *fname)
 		return -LTFS_NO_MEMORY;
 	}
 
-	/* Open file */
-	fd = open(path, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+	/* Open file (O_BINARY: text mode would turn every 0x0A into 0x0D 0x0A) */
+	fd = open(path, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0666);
+	free(path);
 	if(fd < 0)
 		return -errno;
-
-	free(path);
 
 	if (req_trace)
 	{
@@ -757,6 +761,7 @@ int ltfs_trace_dump(char *fname)
 			(struct function_trace_descriptor *) calloc(num_of_fn_trace, sizeof(struct function_trace_descriptor));
 		if (!fn_trc_header->req_t_desc) {
 			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
+			close(fd);
 			return -LTFS_NO_MEMORY;
 		}
 
@@ -855,8 +860,14 @@ int ltfs_set_trace_status(char *mode)
 	int ret = 0;
 
 	if (! strcmp(mode, "on")) {
+		if (trace_enable == true)
+			return 0;
 		trace_enable = true;
-		ltfs_trace_init();
+		ret = ltfs_trace_init();
+		if (ret < 0) {
+			ltfs_trace_destroy();
+			trace_enable = false;
+		}
 	} else {
 		if (trace_enable == true)
 			ltfs_trace_destroy();

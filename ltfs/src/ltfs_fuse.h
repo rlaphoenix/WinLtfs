@@ -138,6 +138,8 @@ struct ltfs_fuse_data {
 	int release_device;            /**< Release device? */
 	int allow_other;               /**< Allow all users to access the volume? */
 	int capture_index;             /**< Capture index information to work directory at unmount */
+	int request_trace;             /**< Record requests in memory, dump to work directory at unmount */
+	int request_profiler;          /**< Stream request and I/O scheduler profiles to work directory */
 	char *symlink_str;             /**< Symbolic Link type fetched by option (live or posix)*/
 	char *str_append_only_mode;    /**< option sting of scsi_append_only_mode */
 	int append_only_mode;          /**< Use append-only mode */

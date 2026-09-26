@@ -1449,55 +1449,6 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 		} else
 			ret = -LTFS_STRING_CONVERSION;
 		free(v);
-	} else if (! strcmp(name, "ltfs.vendor.IBM.trace")) {
-		char *v;
-
-		v = strndup(value, size);
-		if (! v) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
-			return -LTFS_NO_MEMORY;
-		}
-
-		ret = ltfs_set_trace_status(v);
-		free(v);
-	} else if (! strcmp(name, "ltfs.vendor.IBM.dump")) {
-		char *v;
-
-		v = strndup(value, size);
-		if (! v) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
-			return -LTFS_NO_MEMORY;
-		}
-
-		ret = ltfs_dump(v);
-		free(v);
-	} else if (! strcmp(name, "ltfs.vendor.IBM.dumpTrace")) {
-		char *v;
-
-		v = strndup(value, size);
-		if (! v) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
-			return -LTFS_NO_MEMORY;
-		}
-
-		ret = ltfs_trace_dump(v);
-		free(v);
-	} else if (! strcmp(name, "ltfs.vendor.IBM.profiler")) {
-		uint64_t source = 0;
-		char *invalid_start, *v;
-
-		v = strndup(value, size);
-		if (! v) {
-			ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
-			return -LTFS_NO_MEMORY;
-		}
-
-		source = strtoull(v, &invalid_start, 0);
-		if( (*invalid_start == '\0') && v ) {
-			ret = ltfs_profiler_set(source);
-		} else
-			ret = -LTFS_STRING_CONVERSION;
-		free(v);
 	} else if (! strncmp(name, "ltfs.vendor", strlen("ltfs.vendor"))) {
 			if (! strncmp(name + strlen("ltfs.vendor."), LTFS_VENDOR_NAME, strlen(LTFS_VENDOR_NAME))) {
 				ret = _xattr_set_vendorunique_xattr(name, value, size, vol);

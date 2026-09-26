@@ -430,13 +430,9 @@ int unified_open(const char *path, bool open_write, struct dentry **dentry, void
 	int ret = 0;
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
 
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_ENTER(REQ_IOS_OPEN));
-#endif /* 0 */
 	ret = ltfs_fsraw_open(path, open_write, dentry, ((struct unified_data *)iosched_handle)->vol);
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_OPEN));
-#endif /* 0 */
 	return ret;
 }
 
@@ -455,9 +451,7 @@ int unified_close(struct dentry *d, bool flush, void *iosched_handle)
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_ENTER(REQ_IOS_CLOSE));
-#endif /* 0 */
 
 	acquireread_mrsw(&priv->lock);
 	ltfs_mutex_lock(&d->iosched_lock);
@@ -472,9 +466,7 @@ int unified_close(struct dentry *d, bool flush, void *iosched_handle)
 	 * outstanding when the close request started have been issued. */
 	ltfs_fsraw_close(d);
 
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_CLOSE));
-#endif /* 0 */
 
 	return ret ? ret : write_error ? write_error : 0;
 }
@@ -508,15 +500,11 @@ ssize_t unified_read(struct dentry *d, char *buf, size_t size, off_t offset, voi
 	CHECK_ARG_NULL(buf, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
 
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_ENTER(REQ_IOS_READ));
-#endif /* 0 */
 	TAILQ_INIT(&requests);
 
 	if (size == 0) {
-#if 0
 		ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_READ));
-#endif /* 0 */
 		return 0;
 	}
 
@@ -650,9 +638,7 @@ ssize_t unified_read(struct dentry *d, char *buf, size_t size, off_t offset, voi
 out:
 	releaseread_mrsw(&priv->lock);
 
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_READ));
-#endif /* 0 */
 	return ret;
 }
 
@@ -691,9 +677,7 @@ ssize_t unified_write(struct dentry *d, const char *buf, size_t size, off_t offs
 	CHECK_ARG_NULL(buf, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
 
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_ENTER(REQ_IOS_WRITE));
-#endif /* 0 */
 	if (size == 0)
 		return 0;
 
@@ -701,9 +685,7 @@ ssize_t unified_write(struct dentry *d, const char *buf, size_t size, off_t offs
 	ret = ltfs_get_volume_lock(false, priv->vol);
 	if (ret < 0) {
 		releaseread_mrsw(&priv->lock);
-#if 0
 		ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_WRITE));
-#endif /* 0 */
 		return ret;
 	}
 	releaseread_mrsw(&priv->vol->lock);
@@ -725,9 +707,7 @@ write_start:
 		/* Propagate the write error to the caller */
 		ltfs_mutex_unlock(&d->iosched_lock);
 		releaseread_mrsw(&priv->lock);
-#if 0
 		ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_WRITE));
-#endif /* 0 */
 		return ret;
 	}
 
@@ -742,9 +722,7 @@ write_start:
 		if (ret < 0 && ret != -LTFS_NO_SPACE) {
 			ltfs_mutex_unlock(&d->iosched_lock);
 			releaseread_mrsw(&priv->lock);
-#if 0
 			ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_WRITE));
-#endif /* 0 */
 			return ret;
 		}
 		checked_readonly = true;
@@ -910,9 +888,7 @@ out:
 	if (spare_cache)
 		_unified_cache_free(spare_cache, 0, priv);
 	releaseread_mrsw(&priv->lock);
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_WRITE));
-#endif /* 0 */
 	return (ret < 0) ? ret : (ssize_t)original_size;
 }
 
@@ -930,9 +906,7 @@ int unified_flush(struct dentry *d, bool closeflag, void *iosched_handle)
 	struct unified_data *priv = iosched_handle;
 
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_ENTER(REQ_IOS_FLUSH));
-#endif /* 0 */
 
 	if (d) {
 		acquireread_mrsw(&priv->lock);
@@ -943,9 +917,7 @@ int unified_flush(struct dentry *d, bool closeflag, void *iosched_handle)
 	} else
 		ret = _unified_flush_all(priv);
 
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_FLUSH));
-#endif /* 0 */
 	return ret;
 }
 
@@ -968,16 +940,12 @@ int unified_truncate(struct dentry *d, off_t length, void *iosched_handle)
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_ENTER(REQ_IOS_TRUNCATE));
-#endif /* 0 */
 
 	/* Disallow truncate if the medium is read-only */
 	ret = ltfs_get_tape_readonly(priv->vol);
 	if (ret < 0) {
-#if 0
 		ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_TRUNCATE));
-#endif /* 0 */
 		return ret;
 	}
 
@@ -1041,9 +1009,7 @@ int unified_truncate(struct dentry *d, off_t length, void *iosched_handle)
 	if (! dpr)
 		ret = ltfs_fsraw_truncate(d, length, priv->vol);
 
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_TRUNCATE));
-#endif /* 0 */
 	return ret;
 }
 
@@ -1062,9 +1028,7 @@ uint64_t unified_get_filesize(struct dentry *d, void *iosched_handle)
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_ENTER(REQ_IOS_GETFSIZE));
-#endif /* 0 */
 
 	/* Try to get the file size from the dentry_priv */
 	acquireread_mrsw(&priv->lock);
@@ -1082,9 +1046,7 @@ uint64_t unified_get_filesize(struct dentry *d, void *iosched_handle)
 		releaseread_mrsw(&d->meta_lock);
 	}
 
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_GETFSIZE));
-#endif /* 0 */
 	return size;
 }
 
@@ -1108,9 +1070,7 @@ int unified_update_data_placement(struct dentry *d, void *iosched_handle)
 
 	CHECK_ARG_NULL(d, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(iosched_handle, -LTFS_NULL_ARG);
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_ENTER(REQ_IOS_UPDPLACE));
-#endif /* 0 */
 
 	acquireread_mrsw(&priv->lock);
 	ltfs_mutex_lock(&d->iosched_lock);
@@ -1137,9 +1097,7 @@ out:
 	ltfs_mutex_unlock(&d->iosched_lock);
 	releaseread_mrsw(&priv->lock);
 
-#if 0
 	ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_UPDPLACE));
-#endif /* 0 */
 	return 0;
 }
 
@@ -1157,15 +1115,11 @@ ltfs_thread_return _unified_writer_thread(void *iosched_handle)
 
 	while (true) {
 		ltfs_thread_mutex_lock(&priv->queue_lock);
-#if 0
 		ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EXIT(REQ_IOS_IOSCHED));
-#endif /* 0 */
 		while (TAILQ_EMPTY(&priv->dp_queue) && priv->cache_requests == 0 && priv->writer_keepalive)
 			ltfs_thread_cond_wait(&priv->queue_cond, &priv->queue_lock);
 
-#if 0
 		ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_ENTER(REQ_IOS_IOSCHED));
-#endif /* 0 */
 		if (! priv->writer_keepalive) {
 			ltfs_thread_mutex_unlock(&priv->queue_lock);
 			_unified_flush_all(priv);
@@ -1345,9 +1299,7 @@ void _unified_process_data_queue(enum request_state queue, struct unified_data *
 					TAILQ_REMOVE(&dentry_priv->requests, req, list);
 					TAILQ_INSERT_TAIL(&local_req_list, req, list);
 					if (queue != REQUEST_PARTIAL) {
-#if 0
 						ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EVENT(REQ_IOS_DEQUEUE_DP));
-#endif /* 0 */
 					}
 				}
 			}
@@ -1645,9 +1597,7 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
 				if (! dentry_priv->write_ip)
 					++priv->dp_request_count;
 				++dentry_priv->in_dp_queue;
-#if 0
 				ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EVENT(REQ_IOS_ENQUEUE_DP));
-#endif /* 0 */
 			} else {
 				if ((all && dentry_priv->in_dp_queue) || dentry_priv->in_dp_queue == 1) {
 					TAILQ_REMOVE(&priv->dp_queue, dentry_priv, dp_queue);
@@ -1673,9 +1623,7 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
 				}
 				++dentry_priv->in_ip_queue;
 				++priv->ip_request_count;
-#if 0
 				ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EVENT(REQ_IOS_ENQUEUE_IP));
-#endif /* 0 */
 			} else {
 				if ((all && dentry_priv->in_ip_queue) || dentry_priv->in_ip_queue == 1) {
 					TAILQ_REMOVE(&priv->ip_queue, dentry_priv, ip_queue);
@@ -1688,9 +1636,7 @@ int _unified_update_queue_membership(bool add, bool all, enum request_state queu
 					--dentry_priv->in_ip_queue;
 					--priv->ip_request_count;
 				}
-#if 0
 				ltfs_profiler_add_entry(ios_profiler, &ios_profiler_lock, IOSCHED_REQ_EVENT(REQ_IOS_DEQUEUE_IP));
-#endif /* 0 */
 			}
 			break;
 
