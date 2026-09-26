@@ -824,9 +824,6 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	int i;
 	bool is_worm;
 	
-	(void) i;
-	(void) tmpa;
-	(void) mountpoint;
 
 	/*  Setup signal handler to terminate cleanly */
 	ret = ltfs_set_signal_handlers();
@@ -923,6 +920,17 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		ltfs_unset_signal_handlers();
 		return ret < 0 ? 1 : 0;
 	}
+	/* Validate symbolic link type. "live" strips the mount point recorded on tape
+	 * by Linux/macOS LTFS from absolute link targets, so they resolve here. */
+	if (priv->symlink_str) {
+		if (strcasecmp(priv->symlink_str, "live") == 0)
+			priv->livelink = true;
+		else if (strcasecmp(priv->symlink_str, "posix") != 0) {
+			ltfsmsg(LTFS_ERR, "14093E", priv->symlink_str);
+			return 1;
+		}
+		ltfsmsg(LTFS_INFO, "14092I", priv->symlink_str);
+	}
 	/* OSR */
 	/* Save the arguments so we can parse them later at the init
 	 * callback
@@ -937,12 +945,55 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		return 1;
 	}
 
+	/* Get and store mount point */
+	for ( i=0; i<args->argc; i++) {
+		fuse_opt_add_arg(&tmpa, args->argv[i]);
+	}
+	ret = fuse_parse_cmdline( &tmpa, &mountpoint, NULL, NULL);
+	fuse_opt_free_args(&tmpa);
+	if (ret < 0 || mountpoint == NULL) {
+		ltfsmsg(LTFS_ERR, "14094E", ret);
+		ltfs_volume_free(&priv->data);
+		return 1;
+	}
+	priv->data->mountpoint = mountpoint;
+	priv->data->mountpoint_len = strlen(mountpoint);
 
-	/* Not supported on Windows. TODO: Verify this again.*/
-
+	/* Record it as a Windows path reads in a link target: "\\.\T:" and "T" -> "T:",
+	 * "C:\mnt\tape\" -> "C:/mnt/tape". With "*" WinFsp picks the drive letter,
+	 * so there is no mount point to record. */
+	if (!strncmp(mountpoint, "\\\\.\\", 4) || !strncmp(mountpoint, "\\\\?\\", 4))
+		memmove(mountpoint, mountpoint + 4, strlen(mountpoint + 4) + 1);
+	for (i = 0; mountpoint[i]; i++)
+		if (mountpoint[i] == '\\')
+			mountpoint[i] = '/';
+	if (i > 1 && mountpoint[i - 1] == '/')
+		mountpoint[--i] = '\0';
+	if (!strcmp(mountpoint, "*")) {
+		free(mountpoint);
+		mountpoint = NULL;
+	} else if (i == 1) {
+		char *drive = realloc(mountpoint, 3);
+		if (! drive) {
+			ltfsmsg(LTFS_ERR, "10001E", "mount point");
+			ltfs_volume_free(&priv->data);
+			return 1;
+		}
+		strcpy(drive + 1, ":");
+		mountpoint = drive;
+	}
+	priv->data->mountpoint = mountpoint;
+	priv->data->mountpoint_len = mountpoint ? strlen(mountpoint) : 0;
 
 	/* A cached EA must not outlive a media change, even for CLI mounts. */
 	ret = fuse_opt_add_arg(args, "-oEaTimeout=0");
+	if (ret < 0)
+		return 1;
+
+	/* LTFS stores absolute link targets relative to the volume root ("/dir/file",
+	 * which is also what WinFsp hands us for "T:\dir\file"). Without rellinks
+	 * WinFsp refuses to resolve them (access denied). */
+	ret = fuse_opt_add_arg(args, "-orellinks");
 	if (ret < 0)
 		return 1;
 

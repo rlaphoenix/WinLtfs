@@ -86,6 +86,11 @@
 
 #include <ctype.h>
 
+/* MinGW has no S_IFLNK; WinFsp's FUSE layer uses the POSIX value */
+#ifndef S_IFLNK
+#define S_IFLNK 0120000
+#endif
+
 #if (__WORDSIZE == 64)
 #define FILEHANDLE_TO_STRUCT(fh) ((struct ltfs_file_handle *)(uint64_t)(fh))
 #define STRUCT_TO_FILEHANDLE(de) ((uint64_t)(de))
@@ -249,14 +254,15 @@ static void _ltfs_fuse_attr_to_stat(struct fuse_stat *stbuf, struct dentry_attr 
 	 * archival media; also mirrors the read-only flag as an attribute). */
 	if (! attr->isdir) {
 		stbuf->st_flags = UF_ARCHIVE;
-		if (attr->readonly)
+		if (attr->readonly && ! attr->isslink)
 			stbuf->st_flags |= UF_READONLY;
 	}
 #endif
 	stbuf->st_dev = LTFS_SUPER_MAGIC;
 	stbuf->st_ino = attr->uid;
 	if (attr->isslink) {
-		stbuf->st_mode = 0777;
+		/* WinFsp presents S_IFLNK entries as Windows symbolic links (reparse points) */
+		stbuf->st_mode = S_IFLNK | 0777;
 	} else {
 		stbuf->st_mode = ((attr->isdir ? S_IFDIR : S_IFREG) | (attr->readonly ? 0555 : 0777)) &
 			(attr->isdir ? priv->dir_mode : priv->file_mode);
@@ -1123,6 +1129,7 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 		}
 		ltfs_use_atime(priv->atime, priv->data);
 	}
+	priv->data->livelink = priv->livelink;
 
 	/*
 	 * OSR

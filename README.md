@@ -161,6 +161,10 @@ LTFS options:
     -o rollback_mount=<gen>   Attempt to mount on previous index generation (read-only mount)
     -o release_device         Unload the cartridge and clear device reservation, then exit (use with -o devname)
     -o capture_index          Capture latest index to work directory at unmount
+    -o symlink_type=<type>    Specify symbolic link type (default: posix)
+                              posix:  absolute link targets are used as stored on tape
+                              live:   strip the mount point recorded by Linux/macOS LTFS (e.g. /mnt/ltfs)
+                                      so their absolute links resolve on this drive letter
     -o request_trace          Record recent requests in memory and dump them to work directory at unmount
     -o request_profiler       Stream request, I/O scheduler and tape driver profiles to work directory (implies request_trace)
     -o scsi_append_only_mode=<on|off>  Set the tape device append-only mode (default=on)

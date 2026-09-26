@@ -3913,18 +3913,6 @@ int ltfs_print_device_list(struct tape_ops *ops)
 }
 
 /**
- * Set livelink mode flag
- * @param vol LTFS volume. The label structure receives a new UUID and format time; all other
- *            label fields should be filled in correctly before calling this function.
- */
-void ltfs_enable_livelink_mode(struct ltfs_volume *vol)
-{
-	vol->livelink = true;
-
-	return;
-}
-
-/**
  * Create directory with the specified mode
  * @path path of the directory to be created
  * @mode directory creation modes

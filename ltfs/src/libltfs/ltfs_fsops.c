@@ -1820,12 +1820,23 @@ int ltfs_fsops_symlink_path(const char* to, const char* from, ltfs_file_id *id, 
 
 	id->uid = d->uid;
 	id->ino = d->ino;
-	d->target = strdup(to);
+	/* WinFsp (rellinks) hands absolute targets over relative to this volume
+	 * ("T:\dir\file" -> "/dir/file"). Put the mount point back so the target and
+	 * its prefix length are stored as Linux/macOS LTFS store them. */
+	if ( vol->mountpoint && to[0] == '/' ) {
+		if ( asprintf( &d->target, "%s%s", vol->mountpoint, to ) < 0 )
+			d->target = NULL;
+	} else
+		d->target = strdup(to);
 	d->isslink = true;
+	if ( ! d->target ) {
+		ltfs_fsops_close(d, true, true, use_iosche, vol);
+		return -LTFS_NO_MEMORY;
+	}
 
 	/* Set mount point length in EA (LiveLink support mode only) */
-	if ( ( strncmp( to, vol->mountpoint, vol->mountpoint_len )==0 ) &&
-		 ( to[vol->mountpoint_len]=='/' ) )
+	if ( vol->mountpoint && ( strncmp( d->target, vol->mountpoint, vol->mountpoint_len )==0 ) &&
+		 ( d->target[vol->mountpoint_len]=='/' ) )
 		ret = asprintf( &value, "%d", (int) vol->mountpoint_len );
 	else
 		ret = asprintf( &value, "0" );
@@ -1878,22 +1889,43 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 	}
 	
 	if ( size < strlen(d->target)+1 ) {
+		ltfs_fsops_close(d, false, false, use_iosche, vol);
 		return -LTFS_SMALL_BUFFER;
 	}
 	strncpy(buf, d->target, size);
 
+	/*
+	 * Live link (symlink_type=live): Linux/macOS LTFS records the writer's mount
+	 * point length in ltfs.vendor.IBM.prefixLength, e.g. "/mnt/ltfs/dir/file"
+	 * with 9. Strip it; WinFsp (rellinks) resolves "/dir/file" against this volume,
+	 * so no mount point is put in its place. WinLtfs records "T:/dir/file" with 2.
+	 */
 	if ( vol->livelink ) {
 		memset( value, 0, sizeof(value));
 		ret = xattr_get(d, LTFS_LIVELINK_EA_NAME, value, sizeof(value), vol);
 		if ( ret > 0 ) {
 			ltfsmsg(LTFS_DEBUG, "11323D", value);
 			ret = sscanf(value, "%d:%d", &num1, &num2);
-			if ( ( ret == 1 ) && ( num1 != 0 ) ){
+			/* num1 comes from tape: it must fall inside the target, on a '/' as when recorded */
+			if ( ( ret == 1 ) && ( num1 > 0 ) && ( (size_t)num1 < strlen(d->target) ) &&
+				 ( d->target[num1] == '/' ) ){
 				memset( buf, 0, size);
 				strcat(buf, d->target+num1 );
 				ltfsmsg(LTFS_DEBUG, "11324D", d->target, buf);
 			}
 		}
+	}
+
+	/* A drive letter is dropped from what remains: WinFsp
+	 * (rellinks) resolves "/dir/file" against this volume, while "X:/dir/file"
+	 * cannot be represented (links may not leave the volume). */
+	if ( isalpha((unsigned char)buf[0]) && buf[1] == ':' && ( buf[2] == '/' || buf[2] == '\\' ) ) {
+		char *p;
+		memmove(buf, buf + 2, strlen(buf + 2) + 1);
+		for (p = buf; *p; ++p)
+			if (*p == '\\')
+				*p = '/';
+		ltfsmsg(LTFS_DEBUG, "11324D", d->target, buf);
 	}
 
 	ret = ltfs_fsops_close(d, false, false, use_iosche, vol);

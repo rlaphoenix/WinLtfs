@@ -400,10 +400,10 @@ struct ltfs_volume {
 	int reval;                     /**< One of 0, -LTFS_REVAL_RUNNING, -LTFS_REVAL_FAILED */
 	bool append_only_mode;         /**< Use append-only mode */
 	bool set_pew;                  /**< Set PEW value */
-
-	bool livelink;                 /**< Live Link enabled? (SDE) */
+	bool livelink;                 /**< Strip the mount point recorded in symlink targets (symlink_type=live) */
 	char *mountpoint;              /**< Store mount point for Live Link (SDE) */
 	size_t mountpoint_len;         /**< Store mount point path length (SDE) */
+
 	struct volume_lockbits lockbits; /**< Volume lock state structure*/
 };
 
@@ -659,7 +659,6 @@ int ltfs_wait_device_ready(struct ltfs_volume *vol);
 void ltfs_recover_eod_simple(struct ltfs_volume *vol);
 
 int ltfs_print_device_list(struct tape_ops *ops);
-void ltfs_enable_livelink_mode(struct ltfs_volume *vol);
 
 int mkdir_p(const char *path, mode_t mode);
 
