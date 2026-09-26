@@ -227,7 +227,7 @@ root:table {
 		// Reserved 14445I
 		// Reserved 14446I
 		// Reserved 14447I
-		14448I:string { "    -o release_device         Clear device reservation (should be specified with -o devname)" }
+		14448I:string { "    -o release_device         Unload the cartridge and clear device reservation, then exit (use with -o devname)" }
 		// Reserved 14449I
 		// Reserved 14450I
 		// Reserved 14451I
@@ -264,5 +264,6 @@ root:table {
 		14492I:string { "Request trace written to %s/%s" }
 		14493W:string { "Failed to write request trace to %s/%s (%d)" }
 		14494W:string { "Failed to start request profiler in %s (%d)" }
+		14495I:string { "Released device %s" }
 	}
 }

@@ -150,7 +150,7 @@ LTFS options:
     -o force_mount_no_eod     Skip EOD existence check when mounting (read-only mount)
                               Only use for a CM corrupted medium
     -o rollback_mount=<gen>   Attempt to mount on previous index generation (read-only mount)
-    -o release_device         Clear device reservation (should be specified with -o devname)
+    -o release_device         Unload the cartridge and clear device reservation, then exit (use with -o devname)
     -o capture_index          Capture latest index to work directory at unmount
     -o request_trace          Record recent requests in memory and dump them to work directory at unmount
     -o request_profiler       Stream request, I/O scheduler and tape driver profiles to work directory (implies request_trace)
