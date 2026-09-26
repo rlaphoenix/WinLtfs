@@ -38,10 +38,10 @@ libdir = @libdir@/ltfs
 AM_LIBTOOLFLAGS = --tag=disable-static
 
 libdriver_file_la_SOURCES = filedebug_tc.c
-libdriver_file_la_DEPENDENCIES = ../../../../messages/driver_generic_file_dat.o
-libdriver_file_la_LIBADD = ../../../../messages/driver_generic_file_dat.o
-libdriver_file_la_LDFLAGS = -avoid-version -module
-libdriver_file_la_CPPFLAGS = @AM_CPPFLAGS@ -I ../../..
+libdriver_file_la_DEPENDENCIES = $(top_srcdir)/messages/libdriver_generic_file.a
+libdriver_file_la_LIBADD = -L$(abs_top_srcdir)/messages -ldriver_generic_file ../../../libltfs/libltfs.la $(FUSE_MODULE_LIBS) -lws2_32
+libdriver_file_la_CPPFLAGS = -I$(top_srcdir)/src @AM_CPPFLAGS@
+libdriver_file_la_LDFLAGS = -avoid-version -no-undefined
 
 install-exec-hook:
 	for f in $(lib_LTLIBRARIES); do rm -f $(libdir)/$$f; done

@@ -478,9 +478,8 @@ optional target:
 
 | Command                        | What it does                               |
 | ------------------------------ | ------------------------------------------ |
-| `./build.sh`           | `make` + filedebug backend + stage `dist/` |
+| `./build.sh`           | `make` + stage `dist/`                     |
 | `./build.sh make`      | just compile the LTFS tree                 |
-| `./build.sh filedebug` | just the file-emulator tape backend        |
 | `./build.sh dist`      | just (re)stage `dist/` from what is built  |
 | `./build.sh clean`     | `make clean`                               |
 

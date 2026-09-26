@@ -78,7 +78,7 @@
 #define TAPE_SERIAL_LEN_MAX         (32)
 
 struct tc_drive_info {
-	char name[TAPE_DEVNAME_LEN_MAX + 1];           /* Device name like "/dev/IBMtape0" */
+	char name[TAPE_DEVNAME_LEN_MAX + 1];           /* Device name like "TAPE0" */
 	char vendor[TAPE_VENDOR_NAME_LEN_MAX + 1];     /* Vendor code "IBM" */
 	char model[TAPE_MODEL_NAME_LEN_MAX + 1];       /* Device identifier */
 	char serial_number[TAPE_SERIAL_LEN_MAX + 1];   /* Serial number of the drvice */
@@ -119,7 +119,6 @@ struct tc_drive_param {
 	bool         logical_write_protect; /* Logical Write Protect */
 };
 
-/* Changed to uint64_t while fixing cp problems on OS X. This appears to make a difference for unknown reasons. */
 struct tc_remaining_cap {
 	uint64_t remaining_p0; /* Remaining capacity of partition 0 */
 	uint64_t remaining_p1; /* Remaining capacity of partition 1 */
@@ -290,8 +289,8 @@ struct tape_ops {
 	/**
 	 * Open a device.
 	 * @param devname Name of the device to open. The format of this string is
-	 *                implementation-dependent. For example, the ibmtape backend requires
-	 *                the path to an IBM tape device, e.g. /dev/IBMtape0.
+	 *                implementation-dependent. For example, the ltotape backend takes
+	 *                a Windows tape device name, e.g. TAPE0.
 	 * @param[out] handle Stores the handle of the device on a successful call to this function.
 	 *             The device handle is implementation-defined and treated as opaque by libltfs.
 	 * @return 0 on success or a negative value on error.
@@ -299,10 +298,10 @@ struct tape_ops {
 	int (*open)(const char *devname, void **handle);
 
 	/**
-	 * Reopen a device. If reopen is not needed, do nothing in this call. (ie. ibmtape backend)
+	 * Reopen a device. If reopen is not needed, do nothing in this call.
 	 * @param devname Name of the device to open. The format of this string is
-	 *                implementation-dependent. For example, the ibmtape backend requires
-	 *                the path to an IBM tape device, e.g. /dev/IBMtape0.
+	 *                implementation-dependent. For example, the ltotape backend takes
+	 *                a Windows tape device name, e.g. TAPE0.
 	 * @param device Device handle returned by the backend's open().
 	 * @return 0 on success or a negative value on error.
 	 */
@@ -318,7 +317,7 @@ struct tape_ops {
 
 	/**
 	 * Close only file descriptor
-	 * @param device a pointer to the ibmtape backend
+	 * @param device Device handle returned by the backend's open().
 	 * @return 0 on success or a negative value on error
 	 */
 	int   (*close_raw)(void *device);
@@ -599,7 +598,7 @@ struct tape_ops {
 	/**
 	 * Send a SCSI Log Sense command to a device.
 	 * libltfs does not currently use this function, but it may be useful internally (for example,
-	 * ibmtape uses it from its remaining_capacity() function).
+	 * ltotape uses it from its remaining_capacity() function).
 	 * @param device Device handle returned by the backend's open().
 	 * @param page Log page to query.
 	 * @param buf On success, the backend must fill this buffer with the log page's value.
@@ -734,8 +733,7 @@ struct tape_ops {
 	/**
 	 * Set up any required default parameters for a device.
 	 * The effect of this function is implementation-defined. For example, the file backend
-	 * does nothing, while the ibmtape backend sets the device blocksize to variable and disables
-	 * the IBM tape driver's read past file mark option.
+	 * does nothing, while the ltotape backend sets the device blocksize to variable.
 	 * @param device Device handle returned by the backend's open().
 	 * @return 0 on success or a negative value on error.
 	 */

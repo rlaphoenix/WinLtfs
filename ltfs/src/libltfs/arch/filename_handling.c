@@ -59,16 +59,12 @@
 #include "libltfs/fs.h"
 #include "libltfs/pathname.h"
 
-#ifdef HPE_mingw_BUILD
 #include "arch/win/win_util.h"
-#endif
 
-#if defined(mingw_PLATFORM)
 bool _replace_invalid_chars(char * file_name, bool * dosdev);
 char * _generate_target_file_name(const char *prefix, const char *extension, int suffix, bool dosdev);
 int _utf8_strlen(const char *s);
 int _utf8_strncpy(char *t, const char *s, int n);
-#endif
 
 // HPE MD 22.09.2017 Added new struct to support SNIA 2.4 percent encoding
 
@@ -315,7 +311,6 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
                   
    strcpy(source_name, destination_name);  // This may or may not be actually encoded
 
-#if defined(mingw_PLATFORM)
 	bool dosdev = false;
 	int suffix = 0;
 	char *source_file_name_prefix, *source_file_name_extension;
@@ -373,9 +368,6 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
 			}
 		}
 	}
-#else
-	dentry->platform_safe_name = strdup(destination_name);
-#endif
 }
 
 /**
@@ -386,15 +378,9 @@ void update_platform_safe_name(struct dentry* dentry, bool handle_invalid_char, 
  */
 int ltfs_compare_names(const char *name1, const char *name2, int *result)
 {
-#if defined(mingw_PLATFORM)
 	return pathname_caseless_match(name1, name2, result);
-#else
-	*result = strcmp(name1, name2);
-	return 0;
-#endif
 }
 
-#if defined(mingw_PLATFORM)
 /**
  *  Replace invalid chars for a file name with '_'. Returns TRUE
  *  if the file name is changed in this function or the file
@@ -427,14 +413,9 @@ bool _replace_invalid_chars(char * file_name, bool * dosdev)
              *
              * Add parantheses to avoid compiler stylistic warning
              */
-#ifdef HPE_mingw_BUILD
             
             if ((file_name[i] >= 0x01 && file_name[i] <= 0x1F) ||
                 strchr(invalid_chars, file_name[i])) {
-#else
-            if (file_name[i] >= 0x01 && file_name[i] <= 0x1F ||
-                strchr(invalid_chars, file_name[i])) {
-#endif
 				file_name[i] = '_';
 				to_be_changed = true;
 			}
@@ -549,7 +530,6 @@ int _utf8_strncpy(char *t, const char *s, int n)
 	return ret;
 }
 
-#endif
                                                               
 //-Function------------------------------------------------------------------
 // Name:        perform_name_percent_encoding

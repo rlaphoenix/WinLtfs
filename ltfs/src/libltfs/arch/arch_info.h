@@ -49,41 +49,10 @@
 #ifndef arch_info_h_
 #define arch_info_h_
 
-#if defined(__linux__)
-
-#if defined(__i386__)
-#define BUILD_SYS_FOR "This binary is built for Linux (i386)"
-#define BUILD_SYS_GCC __VERSION__
-#elif defined(__x86_64__)
-#define BUILD_SYS_FOR "This binary is built for Linux (x86_64)"
-#define BUILD_SYS_GCC __VERSION__
-#elif defined(__ppc__)
-#define BUILD_SYS_FOR "This binary is built for Linux (ppc)"
-#define BUILD_SYS_GCC __VERSION__
-#elif defined(__ppc64__)
-#define BUILD_SYS_FOR "This binary is built for Linux (ppc64)"
-#define BUILD_SYS_GCC __VERSION__
-#else
-#define BUILD_SYS_FOR "This binary is built for Linux (unknown)"
-#define BUILD_SYS_GCC __VERSION__
-#endif
-
-#elif defined(__APPLE__)
-
-#define BUILD_SYS_FOR "This binary is built for Mac OS X "
-#define BUILD_SYS_GCC __VERSION__
-
-#elif defined(mingw_PLATFORM)
 
 #define BUILD_SYS_FOR "This binary is built for Windows"
 #define BUILD_SYS_GCC __VERSION__
 
-#else
-
-#define BUILD_SYS_FOR "This binary is built on an unknown OS"
-#define BUILD_SYS_GCC __VERSION__
-
-#endif
 
 void show_runtime_system_info(void);
 

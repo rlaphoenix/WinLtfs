@@ -50,9 +50,7 @@
 *************************************************************************************
 */
 
-#ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -425,11 +423,7 @@ int _config_file_parse_name(const char *directive, const char *name_desc, char *
 		*out = NULL;
 	}
 
-#ifdef mingw_PLATFORM
 	tok = strtok_r(NULL, "\t\r\n", &saveptr);
-#else
-	tok = strtok_r(NULL, " \t\r\n", &saveptr);
-#endif
 	if (! tok) {
 		ltfsmsg(LTFS_ERR, "11273E", directive, name_desc);
 		return -LTFS_CONFIG_INVALID;

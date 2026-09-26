@@ -40,12 +40,6 @@
 #ifndef __ltotape_h
 #define __ltotape_h
 
-#ifdef __APPLE__
-# include <CoreFoundation/CoreFoundation.h>
-# include <IOKit/IOTypes.h>
-# include <IOKit/IOKitLib.h>
-# include <IOKit/scsi/SCSITaskLib.h>
-#endif
 
 /*
  * An enumerated type specifying data flow direction during command execution:
@@ -107,12 +101,8 @@ typedef enum {
  */
 typedef struct {
 
-#ifdef HPE_mingw_BUILD
    /* We need this to be pointer precision */
    void                   *fd;
-#else
-   int                     fd;
-#endif
    unsigned char           cdb[16];
    int                     cdb_length;
    unsigned char          *data;
@@ -134,11 +124,6 @@ typedef struct {
 /*
  * Platform-specific members:
  */
-#ifdef __APPLE__
-   IOCFPlugInInterface     **plugInInterface;
-   SCSITaskDeviceInterface **interface;
-   SCSITaskInterface       **task;
-#endif
 
 } ltotape_scsi_io_type;
 

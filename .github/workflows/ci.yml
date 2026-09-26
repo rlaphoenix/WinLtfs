@@ -80,4 +80,3 @@ jobs:
           ./setup.sh
           # Compile only - catch build errors; no dist staging needed for CI.
           ./build.sh make
-          ./build.sh filedebug

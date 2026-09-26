@@ -75,23 +75,16 @@
 ************************************************************************************* 
 */
 
-#ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#endif
 
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
 
-#ifdef __APPLE__
-#include <ICU/unicode/utf8.h>
-#include <ICU/unicode/ustring.h>
-#else
 /* Modern ICU on MinGW needs these too (the old HPE_mingw_BUILD exclusion
  * predates MSYS2's ICU packages) */
 #include <unicode/utf8.h>
 #include <unicode/ustring.h>
-#endif
 
 #include "ltfs_error.h"
 #include "tape.h"
@@ -375,11 +368,7 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle)
 	            * Make this a warning instead of an error. We log errors to the
 	            * event log and this just ends up being noise.
 	            */
-	#ifndef HPE_mingw_BUILD
-				ltfsmsg(LTFS_ERR, "12016E");
-	#else
 				ltfsmsg(LTFS_WARN, "12016E");
-	#endif
 			return -LTFS_NO_MEDIUM;
 		} else if (ret < 0 && ! NEED_REVAL(ret)) {
 			if (ret == -EDEV_MEDIUM_FORMAT_ERROR)
@@ -475,13 +464,11 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle)
 		dev->partition_space[1] = PART_NO_SPACE;
 	}
 
-#ifdef HPE_mingw_BUILD
 	if (ret == EWSTATE_CLEAR) {
 		dev->position.early_warning = false;
 		dev->partition_space[0] = PART_WRITABLE;
 		dev->partition_space[1] = PART_WRITABLE;
 	}
-#endif /* HPE_mingw_BUILD */
 
 	return 0;
 }
@@ -3200,10 +3187,8 @@ int tape_check_reformat_ok(struct device_data *dev, bool force)
 
 	ret2 = tape_device_unlock(dev);
 
-#ifdef HPE_mingw_BUILD
 	/* Get rid of variable set but not checked warning */
 	if (ret2 != 0) {}
-#endif
 
 	return ret;
 #endif

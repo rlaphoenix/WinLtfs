@@ -84,7 +84,6 @@ int _xattr_get_u64(uint64_t val, char **outval, const char *msg);
 int xattr_do_set(struct dentry *d, const char *name, const char *value, size_t size,
 	struct xattr_info *xattr);
 int xattr_do_remove(struct dentry *d, const char *name, bool force, struct ltfs_volume *vol);
-const char *_xattr_strip_name(const char *name);
 int xattr_set_mountpoint_length(struct dentry *d, const char* value, size_t size);
 
 #ifdef __cplusplus

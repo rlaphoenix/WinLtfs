@@ -64,9 +64,7 @@
  * Include the header defining our Event Log message
  *    
  */
-#ifdef HPE_mingw_BUILD
 #include "ltfs_msgs.h"
-#endif
 
 void vsyslog(int priority, const char *format, va_list ap)
 {
@@ -80,7 +78,6 @@ void vsyslog(int priority, const char *format, va_list ap)
      * need to change those to %I
      *    
      */
-#ifdef HPE_mingw_BUILD
     char format_buf[OUTPUT_BUF_SIZE];
     char *buf_ptr;
 
@@ -105,10 +102,6 @@ void vsyslog(int priority, const char *format, va_list ap)
      * immediately
      */
     fflush(stderr);
-#else
-    vsprintf(output_buf, format, ap);
-    fprintf(stderr, "%s\n", output_buf);
-#endif
 
     WORD wType;
     switch (priority)
@@ -134,7 +127,6 @@ void vsyslog(int priority, const char *format, va_list ap)
      * (we have a string for that message ID as a binary resource)
      *    
      */
-#ifdef HPE_mingw_BUILD
     if (wType == EVENTLOG_ERROR_TYPE) {
         HANDLE h = RegisterEventSource(NULL, "LTFS");
         msg = strchr(output_buf, ' ');
@@ -151,23 +143,6 @@ void vsyslog(int priority, const char *format, va_list ap)
                     NULL);               //Data
         DeregisterEventSource(h);
     }
-#else
-    HANDLE h = RegisterEventSource(NULL, "LTFS");
-    char *id = output_buf + strlen("LTFS");
-    msg = strchr(output_buf, ' ');
-    *msg = '\0';
-    msg ++;
-    ReportEvent(h,      //hEventLog
-            wType,      //EventType
-            0,          //Category
-            atoi(id),   //EventId
-            NULL,       //User SID
-            1,          //String Num
-            0,          //DataSize
-            (const CHAR **)&msg, //StringArray (cast: ReportEvent wants LPCSTR*)
-            NULL);      //Data
-    DeregisterEventSource(h);
-#endif
 }
 
 void syslog(int priority, const char *format, ...)

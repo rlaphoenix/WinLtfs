@@ -55,10 +55,6 @@
 ************************************************************************************* 
 */
 
-#ifdef __APPLE__
-#include <ICU/unicode/ubrk.h>
-#include <ICU/unicode/ustring.h>
-#else
 
 /* 
  * OSR
@@ -68,25 +64,16 @@
  * defined. Strange, yes, but true 
  *  
  */
-#if defined(HPE_mingw_BUILD) && defined(__MINGW32__)
 
 #undef __MINGW32__
 #include <unicode/ubrk.h>
 #define __MINGW32__
 
-#else 
-#include <unicode/ubrk.h>
-#endif /* #if defined(HPE_mingw_BUILD) && defined(__MINGW32__) */
 
 #include <unicode/ustring.h>
-#endif
 
 
-#ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#else
-#include <regex.h>
-#endif
 
 #include "ltfs.h"
 #include "libltfs/ltfslogging.h"
@@ -233,9 +220,7 @@ int index_criteria_parse_size(const char *criteria, size_t len, struct index_cri
 	snprintf(rule, rule_length, "%s", criteria + strlen("size="));
 
 	/* On windows, snprintf doesn't append the '\0' by default. We do that here. */
-#ifdef HPE_mingw_BUILD
 	rule[rule_length - 1] = '\0';
-#endif /* HPE_mingw_BUILD */
 
 	for (ptr=&rule[0]; *ptr; ptr++) {
 		if (isalpha(*ptr) && *(ptr+1) && isalpha(*(ptr+1))) {

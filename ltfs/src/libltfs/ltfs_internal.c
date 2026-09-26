@@ -62,7 +62,6 @@
 #include "dcache.h"
 #include "index_criteria.h"
 #include "arch/time_internal.h"
-#include "libltfs/arch/osx/osx_string.h"
 #include "iosched.h"
 #include "ltfs_fsops.h"
 #include "xattr.h"

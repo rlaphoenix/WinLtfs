@@ -46,9 +46,7 @@
 *************************************************************************************
 */
 
-#ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
-#endif
 
 #include <stdlib.h>
 #include <errno.h>
@@ -86,11 +84,7 @@ static struct error_map fuse_error_list[] = {
 	{ LTFS_BAD_PARTNUM,              "I1005E", EINVAL},
 	{ LTFS_LIBXML2_FAILURE,          "I1006E", EINVAL},
 	{ LTFS_DEVICE_UNREADY,           "I1007E", EAGAIN},
-#ifdef ENOMEDIUM
 	{ LTFS_NO_MEDIUM,                "I1008E", ENOMEDIUM},
-#else
-	{ LTFS_NO_MEDIUM,                "I1008E", EAGAIN},
-#endif /* ENOMEDIUM */
 	{ LTFS_LARGE_BLOCKSIZE,          "I1009E", EINVAL},
 	{ LTFS_BAD_LOCATE,               "I1010E", EIO},
 	{ LTFS_NOT_PARTITIONED,          "I1011E", EINVAL},
@@ -112,7 +106,6 @@ static struct error_map fuse_error_list[] = {
 	{ LTFS_DENTRY_EXISTS,            "I1027E", EEXIST},
 	{ LTFS_DIRNOTEMPTY,              "I1028E", ENOTEMPTY},
 	{ LTFS_UNLINKROOT,               "I1029E", EBUSY},
-	{ LTFS_DIRMOVE,                  "I1030E", EIO},
 	{ LTFS_RENAMELOOP,               "I1031E", EINVAL},
 	{ LTFS_SMALL_BLOCK,              "I1032E", EIO},
 	{ LTFS_ISDIRECTORY,              "I1033E", EINVAL},
@@ -120,11 +113,7 @@ static struct error_map fuse_error_list[] = {
 	{ LTFS_BOTH_EOD_MISSING,         "I1035E", EIO},
 	{ LTFS_UNEXPECTED_VALUE,         "I1036E", EIO},
 	{ LTFS_UNSUPPORTED,              "I1037E", EIO},
-#ifdef ENOATTR
-	{ LTFS_NO_XATTR,                 "I1040E", ENOATTR},
-#else
 	{ LTFS_NO_XATTR,                 "I1040E", ENODATA},
-#endif /* ENOATTR */
 	{ LTFS_SIG_HANDLER_ERR,          "I1041E", EINVAL},
 	{ LTFS_INTERRUPTED,              "I1042E", ECANCELED},
 	{ LTFS_UNSUPPORTED_INDEX_VERSION,"I1043E", EINVAL},
@@ -187,17 +176,6 @@ static struct error_map fuse_error_list[] = {
 	{ LTFS_IMAGE_EXISTED,            "I1100E", EINVAL},
 	{ LTFS_IMAGE_MOUNTED,            "I1101E", EIO},
 	{ LTFS_IMAGE_NOT_MOUNTED,        "I1102E", EIO},
-	{ LTFS_MTAB_NOREGULAR,           "I1103E", EIO},
-	{ LTFS_MTAB_OPEN,                "I1104E", EIO},
-	{ LTFS_MTAB_LOCK,                "I1105E", EIO},
-	{ LTFS_MTAB_SEEK,                "I1106E", EIO},
-	{ LTFS_MTAB_UPDATE,              "I1107E", EIO},
-	{ LTFS_MTAB_FLUSH,               "I1108E", EIO},
-	{ LTFS_MTAB_UNLOCK,              "I1109E", EIO},
-	{ LTFS_MTAB_CLOSE,               "I1110E", EIO},
-	{ LTFS_MTAB_COPY,                "I1111E", EIO},
-	{ LTFS_MTAB_TEMP_OPEN,           "I1112E", EIO},
-	{ LTFS_MTAB_TEMP_SEEK,           "I1113E", EIO},
 	{ LTFS_DCACHE_CREATION_FAIL,     "I1114E", EIO},
 	{ LTFS_DCACHE_UNSUPPORTED,       "I1115E", EINVAL},
 	{ LTFS_DCACHE_EXTRA_SPACE,       "I1116E", EINVAL},
@@ -247,12 +225,6 @@ static struct error_map fuse_error_list[] = {
 	{ LTFS_XATTR_ERR,                "I1162E", EIO},
 	{ LTFS_FTW_ERR,                  "I1163E", EIO},
 	{ LTFS_TIME_ERR,                 "I1164E", EIO},
-#ifdef ENOTBLK
-	{ LTFS_NOT_BLOCK_DEVICE,         "I1165E", ENOTBLK},
-#endif
-#ifdef EDQUOT
-	{ LTFS_QUOTA_EXCEEDED,           "I1166E", EDQUOT},
-#endif
 	{ LTFS_TOO_MANY_OPEN_FILES,      "I1167E", ENFILE},
 	{ LTFS_LINKDIR_EXISTS,           "I1168E", EEXIST},
 	{ LTFS_NO_DMAP_ENTRY,            "I1169E", ENOENT},
@@ -272,7 +244,6 @@ static struct error_map fuse_error_list[] = {
 	{ LTFS_INCOMPATIBLE_CACHE,       "I1183E", EINVAL },
 	{ LTFS_DCACHE_NOT_INITIALIZED,   "I1184E", EIO },
 	{ LTFS_CONFIG_FILE_WLOCKED,      "I1185E", EINVAL },
-	{ LTFS_CREATE_QUEUE,             "I1186E", EIO },
 	{ LTFS_FORK_ERROR,               "I1187E", EIO },
 	{ LTFS_NOACK,                    "I1188E", EIO },
 	{ LTFS_NODE_DETECT_FAIL,         "I1189E", EIO },
@@ -299,11 +270,7 @@ static struct error_map fuse_error_list[] = {
 	{ EDEV_DRIVE_NOT_PRESENT,        "D0013E", EINVAL},
 	{ EDEV_RECORD_NOT_FOUND,         "D0014E", ESPIPE},
 	{ EDEV_INSUFFICIENT_TIME,        "D0015E", EIO},
-#ifdef EUCLEAN
 	{ EDEV_CLEANING_REQUIRED,        "D0098E", EUCLEAN},
-#else
-	{ EDEV_CLEANING_REQUIRED,        "D0098E", EAGAIN},
-#endif
 	{ EDEV_RECOVERED_ERROR,          "D0100E", EIO},
 	{ EDEV_MODE_PARAMETER_ROUNDED,   "D0101E", EIO},
 	{ EDEV_DEGRADED_MEDIA,           "D0198E", EIO},
@@ -316,11 +283,7 @@ static struct error_map fuse_error_list[] = {
 	{ EDEV_OFFLINE,                  "D0206E", EAGAIN},
 	{ EDEV_DOOR_OPEN,                "D0207E", EAGAIN},
 	{ EDEV_OVER_TEMPERATURE,         "D0208E", EAGAIN},
-#ifdef ENOMEDIUM
 	{ EDEV_NO_MEDIUM,                "D0209E", ENOMEDIUM},
-#else
-	{ EDEV_NO_MEDIUM,                "D0209E", EAGAIN},
-#endif /* ENOMEDIUM */
 	{ EDEV_NOT_SELF_CONFIGURED_YET,  "D0210E", EAGAIN},
 	{ EDEV_PARAMETER_VALUE_REJECTED, "D0211E", EINVAL},
 	{ EDEV_CLEANING_IN_PROGRESS,     "D0297E", EAGAIN},

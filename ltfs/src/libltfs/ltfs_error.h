@@ -86,7 +86,6 @@
 #define LTFS_DENTRY_EXISTS             1027  /* Target path exists and cannot remove it */
 #define LTFS_DIRNOTEMPTY               1028  /* Cannot remove non-empty directory */
 #define LTFS_UNLINKROOT                1029  /* Cannot remove the root directory */
-#define LTFS_DIRMOVE                   1030  /* Cannot move directory due to MacFUSE bug */
 #define LTFS_RENAMELOOP                1031  /* Cannot rename directory underneath itself */
 #define LTFS_SMALL_BLOCK               1032  /* Block read from tape is smaller than expected */
 #define LTFS_ISDIRECTORY               1033  /* Operation is only valid on files */
@@ -161,17 +160,6 @@
 #define LTFS_IMAGE_EXISTED             1100  /* The disk image is already existed */
 #define LTFS_IMAGE_MOUNTED             1101  /* The disk image is already mounted */
 #define LTFS_IMAGE_NOT_MOUNTED         1102  /* The disk image is not mounted */
-#define LTFS_MTAB_NOREGULAR            1103  /* /etc/mtab is not a regular file */
-#define LTFS_MTAB_OPEN                 1104  /* Failed to open /etc/mtab */
-#define LTFS_MTAB_LOCK                 1105  /* Failed to lock /etc/mtab */
-#define LTFS_MTAB_SEEK                 1106  /* Failed to seek /etc/mtab */
-#define LTFS_MTAB_UPDATE               1107  /* Failed to update /etc/mtab */
-#define LTFS_MTAB_FLUSH                1108  /* Failed to flush /etc/mtab */
-#define LTFS_MTAB_UNLOCK               1109  /* Failed to unlock /etc/mtab */
-#define LTFS_MTAB_CLOSE                1110  /* Failed to close /etc/mtab */
-#define LTFS_MTAB_COPY                 1111  /* Failed to copy /etc/mtab to temporary file */
-#define LTFS_MTAB_TEMP_OPEN            1112  /* Failed to open the temporary file for /etc/mtab */
-#define LTFS_MTAB_TEMP_SEEK            1113  /* Failed to seek the temporary file for /etc/mtab */
 #define LTFS_DCACHE_CREATION_FAIL      1114  /* Failed to create a directory tree to the disk image */
 #define LTFS_DCACHE_UNSUPPORTED        1115  /* Failed to cache dentry due to host filesystem's limitation */
 #define LTFS_DCACHE_EXTRA_SPACE        1116  /* The disk image reached to maximum size. */
@@ -223,8 +211,6 @@
 #define LTFS_XATTR_ERR                 1162  /* Failed to set/get Extended Attribute */
 #define LTFS_FTW_ERR                   1163  /* Failed to perform file tree walk */
 #define LTFS_TIME_ERR                  1164  /* Failed to update time stamp */
-#define LTFS_NOT_BLOCK_DEVICE          1165  /* Block device is required */
-#define LTFS_QUOTA_EXCEEDED            1166  /* Disk quota exceeded */
 #define LTFS_TOO_MANY_OPEN_FILES       1167  /* Too many open files in system */
 #define LTFS_LINKDIR_EXISTS            1168  /* Link dir exists */
 #define LTFS_NO_DMAP_ENTRY             1169  /* No dmap entry */
@@ -244,7 +230,6 @@
 #define LTFS_INCOMPATIBLE_CACHE        1183  /* Incompatible cache file is detected */
 #define LTFS_DCACHE_NOT_INITIALIZED    1184 /* Dcache is not initialized yet */
 #define LTFS_CONFIG_FILE_WLOCKED       1185  /* The multinode config file is locked */
-#define LTFS_CREATE_QUEUE              1186  /* Failed to create POSIX message pueue */
 #define LTFS_FORK_ERROR                1187  /* Failed to fork process */
 #define LTFS_NOACK                     1188  /* No ack message is received from child process */
 #define LTFS_NODE_DETECT_FAIL          1189  /* Node type detection is failed */

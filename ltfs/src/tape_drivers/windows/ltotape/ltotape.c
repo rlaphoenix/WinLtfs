@@ -1067,7 +1067,6 @@ int ltotape_load(void *device, struct tc_position *pos)
     * in Explorer. We do that by sending a readposition and
       checking for a no media error, which is pretty quck
    */
-#ifdef HPE_mingw_BUILD
    int           read_pos_status;
    /* Read the position */
    read_pos_status = ltotape_readposition (device, pos);
@@ -1075,7 +1074,6 @@ int ltotape_load(void *device, struct tc_position *pos)
    /* Check for ENOMEDIUM, in which case we'll get out! */
    if (read_pos_status == -ENOMEDIUM) 
        return read_pos_status;
-#endif   
 
    status = ltotape_loadunload (device, TRUE, FALSE);  /* TRUE to load, FALSE to load fully (not hold)*/
 
@@ -1275,11 +1273,7 @@ int ltotape_readposition (void *device, struct tc_position *pos)
   
   } else {
      if (SENSE_IS_NO_MEDIA(sio->sensedata)) {
-#ifdef __APPLE__
-         status = -EAGAIN;
-#else
          status = -ENOMEDIUM;
-#endif
 
      } else {     
             ltfsmsg(LTFS_ERR, "20066E", status);
@@ -1957,11 +1951,7 @@ int ltotape_write_attribute (void *device, const tape_partition_t part, const un
   pRawData = (unsigned char*) calloc (1, length);
   if (pRawData == NULL) {
     ltfsmsg (LTFS_ERR, "10001E", "ltotape_write_attribute: data buffer");
-#ifdef HPE_mingw_BUILD
      return -ENOMEM;
-#else
-     return -EDEV_NO_MEMORY;
-#endif
   }
   
   *pRawData     = (unsigned char)(size >> 24);

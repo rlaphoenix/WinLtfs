@@ -52,16 +52,10 @@
 /*
  * Creator tag value format:
  *     PackageName Version - Platform - Program
- *     IBM LTFS 0.2.0 - Linux - mkltfs
+ *     WinLtfs 1.2.0 - Windows - mkltfs
  */
 #define CREATOR_STRING_FORMAT "%s %s - %s - %s"
 
-#ifdef __APPLE__
-    #define PLATFORM "Mac OS X"
-#elif mingw_PLATFORM
     #define PLATFORM "Windows"
-#else
-    #define PLATFORM "Linux"
-#endif /* __APPLE__ */
 
 #endif /* VERSION_H_ */

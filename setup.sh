@@ -62,13 +62,9 @@ echo "==> configure"
 # (64-bit). Without it off_t is a 32-bit long on Win64 and all file I/O caps at
 # 2 GiB (offset 0x80000000 wraps negative). win_util.h's late "#define
 # _FILE_OFFSET_BITS 64" lands after <sys/types.h> and is too late to matter.
-#
-# HPE StoreOpen 3.4.2 renamed the Windows build macro HP_mingw_BUILD ->
-# HPE_mingw_BUILD; we define BOTH so the upstream 3.4.2 code (HPE_) and our
-# WinFsp port's guards (HP_) are all active.
 ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 \
     --with-winfsp="$ROOT/build/wfsp" \
-    CFLAGS="-Dmingw_PLATFORM=1 -DHP_mingw_BUILD=1 -DHPE_mingw_BUILD=1 -D_FILE_OFFSET_BITS=64 -DWINVER=0x0601 -D_WIN32_WINNT=0x0601"
+    CFLAGS="-D_FILE_OFFSET_BITS=64 -DWINVER=0x0601 -D_WIN32_WINNT=0x0601"
 
 echo
 echo "Setup complete. Build with: ./build.sh"

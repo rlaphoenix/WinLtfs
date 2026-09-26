@@ -209,7 +209,6 @@ int ltfs_fsops_unlink(const char *path, ltfs_file_id *id, struct ltfs_volume *vo
  *    - -LTFS_NO_DENTRY if the source path or target directory does not exist, or if the source
  *                      path cannot be UTF-8 encoded or contains invalid characters
  *    - -LTFS_DIRNOTEMPTY if the target is a non-empty directory
- *    - -LTFS_DIR_MOVE (OS X only) if a move between directories was requested
  *    - -LTFS_RENAMELOOP if 'from' is the parent or ancestor of 'to'
  *    - Another negative value if an unexpected error occurred
  */

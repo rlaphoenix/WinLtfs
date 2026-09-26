@@ -80,13 +80,9 @@ int ltfs_fsops_open(const char *path, bool open_write, bool use_iosched, struct 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	if (open_write) {
-#ifdef HPE_mingw_BUILD
 		ret = tape_read_only(vol->device, ltfs_part_id2num(ltfs_ip_id(vol), vol));
 		if (ret == 0 || ret == -LTFS_LESS_SPACE)
 			ret = tape_read_only(vol->device, ltfs_part_id2num(ltfs_dp_id(vol), vol));
-#else /* Appending was allowed when VAL locked hence differenciating the code */
-		ret = ltfs_get_tape_readonly(vol);
-#endif
 		/* Check for a read-only volume, but ignore ENOSPC: file systems do
 		 * not typically check for medium full on open.
 		 */
@@ -710,21 +706,6 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		goto out_unlock;
 	}
 
-#ifdef __APPLE__
-	/*
-	 * Directory move is inhibited because of a MacFUSE bug.
-	 * MacFUSE requests unexpected path after directory move, and that problem
-	 * causes an unexpected move.
-	 */
-	if (fromdentry->isdir && fromdir != todir) {
-		ltfsmsg(LTFS_INFO, "11259I");
-		ret = -LTFS_DIRMOVE;
-		if (todentry && fromdentry != todentry)
-			fs_release_dentry(todentry);
-		fs_release_dentry(fromdentry);
-		goto out_unlock;
-	}
-#endif
 
 	/* If the destination dentry was found and is distinct from the source dentry, try
 	 * to unlink it before going forward with the rename. */
@@ -946,7 +927,6 @@ int ltfs_fsops_setxattr(const char *path, const char *name, const char *value, s
 	int ret;
 	struct dentry *d;
 	char *new_path = NULL, *new_name = NULL;
-	const char *new_name_strip;
 	bool write_lock;
 	int ret_restore;
 	char value_restore[LTFS_MAX_XATTR_SIZE];
@@ -1004,15 +984,9 @@ int ltfs_fsops_setxattr(const char *path, const char *name, const char *value, s
 		goto out_free;
 	}
 
-	new_name_strip = _xattr_strip_name(new_name);
-	if (! new_name_strip) {
-		/* Namespace is not supported (Linux) */
-		ret = -LTFS_XATTR_NAMESPACE;
-		goto out_free;
-	}
 	// HPE MD 22.09.2017 function was changed for SNIA 2.4 extra param 0 
 	// will cause function to perform as before.
-	ret = pathname_validate_xattr_name(new_name_strip, 0);
+	ret = pathname_validate_xattr_name(new_name, 0);
 	if (ret < 0) {
 		if (ret != -LTFS_INVALID_PATH && ret != -LTFS_NAMETOOLONG) /* normal errors */
 			ltfsmsg(LTFS_ERR, "11120E", ret);
@@ -1022,7 +996,7 @@ int ltfs_fsops_setxattr(const char *path, const char *name, const char *value, s
 	/* Special case: if we are syncing the volume, flush the scheduler buffers
 	 * before taking locks. */
 start:
-	if (! strcmp(new_name_strip, "ltfs.sync") && ! strcmp(path, "/")) {
+	if (! strcmp(new_name, "ltfs.sync") && ! strcmp(path, "/")) {
 		ret = ltfs_fsops_flush(NULL, false, vol);
 		if (ret < 0) {
 			ltfsmsg(LTFS_ERR, "11325E", ret);
@@ -1052,17 +1026,17 @@ start:
 	id->ino = d->ino;
 
 	/* Save original value */
-	ret_restore = xattr_get(d, new_name_strip, value_restore, sizeof(value_restore), vol);
+	ret_restore = xattr_get(d, new_name, value_restore, sizeof(value_restore), vol);
 
-	ret = xattr_set(d, new_name_strip, value, size, flags, vol);
+	ret = xattr_set(d, new_name, value, size, flags, vol);
 	if (dcache_initialized(NULL)) {
 		if (ret == 0) {
-			ret = dcache_setxattr(new_path, d, new_name_strip, value, size, flags, vol);
+			ret = dcache_setxattr(new_path, d, new_name, value, size, flags, vol);
 			if (ret < 0) {
 				if (ret_restore >= 0)
-					xattr_set(d, new_name_strip, value_restore, ret_restore, XATTR_REPLACE, vol);
+					xattr_set(d, new_name, value_restore, ret_restore, XATTR_REPLACE, vol);
 				else
-					xattr_remove(d, new_name_strip, vol);
+					xattr_remove(d, new_name, vol);
 			}
 		}
 		dcache_close(d, true, true, vol);
@@ -1092,7 +1066,6 @@ int ltfs_fsops_getxattr(const char *path, const char *name, char *value, size_t 
 	int ret;
 	struct dentry *d;
 	char *new_path = NULL, *new_name = NULL;
-	const char *new_name_strip;
 
 	id->uid = 0;
 	id->ino = 0;
@@ -1122,15 +1095,9 @@ int ltfs_fsops_getxattr(const char *path, const char *name, char *value, size_t 
 			ltfsmsg(LTFS_ERR, "11125E", ret);
 		goto out_free;
 	}
-	new_name_strip = _xattr_strip_name(new_name);
-	if (! new_name_strip) {
-		/* Namespace is not supported (Linux) */
-		ret = -LTFS_NO_XATTR;
-		goto out_free;
-	}
 	// HPE MD 22.09.2017 function was changed for SNIA 2.4 extra param 0 
 	// will cause function to perform as before.
-	ret = pathname_validate_xattr_name(new_name_strip, 0);
+	ret = pathname_validate_xattr_name(new_name, 0);
 	if (ret < 0) {
 		if (ret != -LTFS_INVALID_PATH && ret != -LTFS_NAMETOOLONG) /* normal errors */
 			ltfsmsg(LTFS_ERR, "11126E", ret);
@@ -1158,10 +1125,10 @@ start:
 	id->ino = d->ino;
 
 	if (dcache_initialized(NULL)) {
-		ret = dcache_getxattr(new_path, d, new_name_strip, value, size, vol);
+		ret = dcache_getxattr(new_path, d, new_name, value, size, vol);
 		dcache_close(d, true, true, vol);
 	} else {
-		ret = xattr_get(d, new_name_strip, value, size, vol);
+		ret = xattr_get(d, new_name, value, size, vol);
 		fs_release_dentry(d);
 	}
 	if (ret == -LTFS_RESTART_OPERATION)
@@ -1241,7 +1208,6 @@ int ltfs_fsops_removexattr(const char *path, const char *name, ltfs_file_id *id,
 	int ret;
 	struct dentry *d;
 	char *new_path = NULL, *new_name = NULL;
-	const char *new_name_strip;
 
 	id->uid = 0;
 	id->ino = 0;
@@ -1277,15 +1243,9 @@ int ltfs_fsops_removexattr(const char *path, const char *name, ltfs_file_id *id,
 			ltfsmsg(LTFS_ERR, "11137E", ret);
 		goto out_free;
 	}
-	new_name_strip = _xattr_strip_name(new_name);
-	if (! new_name_strip) {
-		/* Namespace is not supported (Linux) */
-		ret = -LTFS_NO_XATTR;
-		goto out_free;
-	}
 	// HPE MD 22.09.2017 function was changed for SNIA 2.4 extra param 0 
 	// will cause function to perform as before.
-	ret = pathname_validate_xattr_name(new_name_strip, 0);
+	ret = pathname_validate_xattr_name(new_name, 0);
 	if (ret < 0) {
 		if (ret != -LTFS_INVALID_PATH && ret != -LTFS_NAMETOOLONG) /* normal errors */
 			ltfsmsg(LTFS_ERR, "11138E", ret);
@@ -1311,10 +1271,10 @@ int ltfs_fsops_removexattr(const char *path, const char *name, ltfs_file_id *id,
 	id->uid = d->uid;
 	id->ino = d->ino;
 
-	ret = xattr_remove(d, new_name_strip, vol);
+	ret = xattr_remove(d, new_name, vol);
 	if (dcache_initialized(NULL)) {
 		if (ret == 0)
-			ret = dcache_removexattr(new_path, d, new_name_strip, vol);
+			ret = dcache_removexattr(new_path, d, new_name, vol);
 		dcache_close(d, true, true, vol);
 	} else
 		fs_release_dentry(d);
@@ -1930,12 +1890,6 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 			ret = sscanf(value, "%d:%d", &num1, &num2);
 			if ( ( ret == 1 ) && ( num1 != 0 ) ){
 				memset( buf, 0, size);
-#ifndef mingw_PLATFORM
-				if ( size < strlen(d->target)-num1+vol->mountpoint_len+1 ){
-					return -LTFS_SMALL_BUFFER;
-				}
-				strcpy(buf, vol->mountpoint);
-#endif
 				strcat(buf, d->target+num1 );
 				ltfsmsg(LTFS_DEBUG, "11324D", d->target, buf);
 			}

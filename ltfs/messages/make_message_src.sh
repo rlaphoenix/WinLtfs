@@ -2,17 +2,8 @@
 
 set -e
 
-KERNEL_NAME=`uname -s`
-if [ "$KERNEL_NAME" = "Darwin" ]; then
-	ICU_FRAMEWORK=/Library/Frameworks/ICU.framework
-	export PATH=${PATH}:${ICU_FRAMEWORK}/Versions/Current/usr/bin
-	export DYLD_LIBRARY_PATH=${ICU_FRAMEWORK}/Versions/Current/usr/lib
-	GENRB=${ICU_FRAMEWORK}/Versions/Current/usr/bin/genrb
-	PKGDATA=${ICU_FRAMEWORK}/Versions/Current/usr/bin/pkgdata
-else
-	GENRB=genrb
-	PKGDATA=pkgdata
-fi
+GENRB=genrb
+PKGDATA=pkgdata
 
 if [ "$#" -ne "1" ]; then
 	echo "Usage: $0 object_file"
@@ -43,29 +34,14 @@ make_obj() {
 		PKGDATA_OPTS=
 	fi
 
-	case $KERNEL_NAME in
-		MINGW*_NT*|MSYS_NT*)
-			#
-			# HP_mingw_BUILD
-			#
-			# We use dynamic libraries for the package data, so use the
-			# -m dll switch
-			#
-			${PKGDATA} -p ${BASENAME} -m dll -q ${PKGDATA_OPTS} packagelist.txt >/dev/null
-			
-			# Modern ICU pkgdata emits a lib-prefixed DLL plus a real
-			# import library. Keep the DLL name pkgdata embedded in the
-			# import lib (lib${BASENAME}.dll) so the loader finds it.
-			#
-			cp lib${BASENAME}.dll.a ../../lib${BASENAME}.a
-			cp lib${BASENAME}.dll ../../lib${BASENAME}.dll
-			cp ${BASENAME}_dat.o ../../${BASENAME}_dat.o
-			;;
-		*)
-			${PKGDATA} -p ${BASENAME} -m static -q ${PKGDATA_OPTS} packagelist.txt >/dev/null
-			mv ${BASENAME}_dat.o ../../
-			;;
-	esac
+	# We use dynamic libraries for the package data (-m dll). Modern ICU
+	# pkgdata emits a lib-prefixed DLL plus a real import library; keep the
+	# DLL name pkgdata embedded in the import lib (lib${BASENAME}.dll) so the
+	# loader finds it.
+	${PKGDATA} -p ${BASENAME} -m dll -q ${PKGDATA_OPTS} packagelist.txt >/dev/null
+	cp lib${BASENAME}.dll.a ../../lib${BASENAME}.a
+	cp lib${BASENAME}.dll ../../lib${BASENAME}.dll
+	cp ${BASENAME}_dat.o ../../${BASENAME}_dat.o
 
 	# Clean up
 	cd ..

@@ -72,11 +72,7 @@ static int ltotape_trim_logs (char* serialno);
 static int ltotape_readbuffer (void *device, int id, unsigned char *buf, size_t offset, size_t len, int type);
 static int ltotape_sort_oldest (const struct dirent ** pA, const struct dirent ** pB);
 
-#ifdef __APPLE__
-static int ltotape_select_logfiles (struct dirent *entry);
-#else
 static int ltotape_select_logfiles (const struct dirent *entry);
-#endif
 
 
 /****************************************************************************
@@ -94,10 +90,6 @@ static char drivesn[32];
  */
 char* ltotape_get_default_snapshotdir (void)
 {
-#ifdef __APPLE__
-  sprintf (dirname, MACOS_LOGFILE_DIR);
-
-#elif HPE_mingw_BUILD
  /* 
   * OSR
   *
@@ -106,9 +98,6 @@ char* ltotape_get_default_snapshotdir (void)
   */
   GetTempPath(sizeof(dirname), dirname);
 
-#else
-  sprintf (dirname, LINUX_LOGFILE_DIR);
-#endif
 
   return (dirname);
 }
@@ -898,11 +887,7 @@ static int ltotape_trim_logs (char* serialno)
 /*
  * Find the oldest logfile for this drive:
  */
-#if defined HPE_mingw_BUILD || defined __APPLE__
   numlogs = scandir (dirname, &logfiles, (void*)ltotape_select_logfiles, (void*)ltotape_sort_oldest);
-#else
-  numlogs = scandir (dirname, &logfiles, ltotape_select_logfiles, ltotape_sort_oldest);
-#endif
 
   if (numlogs < 0) {
     ltfsmsg(LTFS_INFO, "20091I", "directory", dirname, strerror(errno));
@@ -937,11 +922,7 @@ static int ltotape_trim_logs (char* serialno)
  * @param entry - a particular entry in the directory being scanned
  * @return 1 if file should be included, 0 if it should be excluded
  */
-#ifdef __APPLE__
-static int ltotape_select_logfiles (struct dirent *entry)
-#else
 static int ltotape_select_logfiles (const struct dirent *entry)
-#endif
 {
   if ((strstr (entry->d_name, "ltfs_") != NULL) &&
       (strstr (entry->d_name, drivesn) != NULL)) {
@@ -968,12 +949,8 @@ static int ltotape_sort_oldest (const struct dirent ** pA, const struct dirent *
   sprintf (path, "%s/%s", dirname, (*pA)->d_name);
   if (stat (path, &filstat) != 0) {
     ltfsmsg(LTFS_INFO, "20091I", "file", path, strerror(errno));
-#ifdef HPE_mingw_BUILD
     /* Not a pointer, so a compiler warning trying to assign NULL*/
     tA = (time_t)0;
-#else
-    tA = (time_t)NULL;
-#endif
   } else {
     tA = filstat.st_mtime;
   }
@@ -981,12 +958,8 @@ static int ltotape_sort_oldest (const struct dirent ** pA, const struct dirent *
   sprintf (path, "%s/%s", dirname, (*pB)->d_name);
   if (stat (path, &filstat) != 0) {
     ltfsmsg(LTFS_INFO, "20091I", "file", path, strerror(errno));
-#ifdef HPE_mingw_BUILD
     /* Not a pointer, so a compiler warning trying to assign NULL*/
     tB = (time_t)0;
-#else
-    tB = (time_t)NULL;
-#endif
   } else {
     tB = filstat.st_mtime;
   }

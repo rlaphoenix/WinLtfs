@@ -53,12 +53,7 @@
 #define AGENT "ltfs"
 #define TABLE_FILE_MODE "rb"
 
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
-#define DEFAULT_DEFFILE LTFS_BASE_DIR "/share/snmp/LtfsSnmpTrapDef.txt"
-static const oid snmptrap_oid[] = { 1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0 };
-#else
 #define DEFAULT_DEFFILE LTFS_BASE_DIR "LtfsSnmpTrapDef.txt"
-#endif
 
 bool ltfs_snmp_enabled = false;
 
@@ -144,13 +139,6 @@ bool is_snmp_trapid(const char *id)
 
 int ltfs_snmp_init(char *snmp_deffile)
 {
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
-	ltfs_snmp_enabled = true;
-	netsnmp_ds_set_boolean(NETSNMP_DS_APPLICATION_ID, NETSNMP_DS_AGENT_ROLE, 1);
-	init_agent(AGENT);
-	init_snmp(AGENT);
-	read_trap_def_file(snmp_deffile);
-#endif
 	return 0;
 }
 
@@ -159,115 +147,25 @@ int ltfs_snmp_finish()
 	struct trap_entry *entry = NULL;
 	TAILQ_FOREACH(entry, &trap_entries, list)
 		free(entry->id);
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
-	send_ltfsStopTrap();
-	snmp_shutdown(AGENT);
-#endif
 	return 0;
 }
 
 int send_ltfsStartTrap(void)
 {
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
-	netsnmp_variable_list *var_list = NULL;
-	const oid ltfsStartTrap_oid[] = { 1, 3, 6, 1, 4, 1, 2, 6, 248, 2, 1 };
-
-	/* Set the snmpTrapOid.0 value */
-	snmp_varlist_add_variable(&var_list,
-		snmptrap_oid, OID_LENGTH(snmptrap_oid),
-		ASN_OBJECT_ID,
-		(const u_char *)ltfsStartTrap_oid,
-		sizeof(ltfsStartTrap_oid));
-
-	/* Send the trap to the list of configured destinations and clean up */
-	send_v2trap(var_list);
-	snmp_free_varbind(var_list);
-	return SNMP_ERR_NOERROR;
-#else
 	return 0;
-#endif
 }
 
 int send_ltfsStopTrap(void)
 {
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
-	netsnmp_variable_list *var_list = NULL;
-	const oid ltfsStopTrap_oid[] = { 1, 3, 6, 1, 4, 1, 2, 6, 248, 2, 2 };
-
-	/* Set the snmpTrapOid.0 value */
-	snmp_varlist_add_variable(&var_list,
-		snmptrap_oid, OID_LENGTH(snmptrap_oid),
-		ASN_OBJECT_ID,
-		(const u_char *)ltfsStopTrap_oid,
-		sizeof(ltfsStopTrap_oid));
-
-	/* Send the trap to the list of configured destinations and clean up */
-	send_v2trap(var_list);
-	snmp_free_varbind(var_list);
-	return SNMP_ERR_NOERROR;
-#else
 	return 0;
-#endif
 }
 
 int send_ltfsInfoTrap(char *str)
 {
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
-	netsnmp_variable_list *var_list = NULL;
-	const oid ltfsInfoTrap_oid[] = { 1, 3, 6, 1, 4, 1, 2, 6, 248, 2, 3 };
-	const oid ltfsTrapInfo_oid[] = { 1, 3, 6, 1, 4, 1, 2, 6, 248, 1, 1, 0 };
-
-	/* Set the snmpTrapOid.0 value */
-	snmp_varlist_add_variable(&var_list,
-		snmptrap_oid, OID_LENGTH(snmptrap_oid),
-		ASN_OBJECT_ID,
-		(const u_char *)ltfsInfoTrap_oid,
-		sizeof(ltfsInfoTrap_oid));
-
-	/* Add any objects from the trap definition */
-	snmp_varlist_add_variable(&var_list,
-		ltfsTrapInfo_oid,
-		OID_LENGTH(ltfsTrapInfo_oid),
-		ASN_OCTET_STR,
-		(const u_char *)str,
-		strlen(str));
-
-	/* Send the trap to the list of configured destinations and clean up */
-	send_v2trap(var_list);
-	snmp_free_varbind(var_list);
-	return SNMP_ERR_NOERROR;
-#else
 	return 0;
-#endif
 }
 
 int send_ltfsErrorTrap(char *str)
 {
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
-	netsnmp_variable_list *var_list = NULL;
-	const oid ltfsErrorTrap_oid[] = { 1, 3, 6, 1, 4, 1, 2, 6, 248, 2, 4 };
-	const oid ltfsTrapInfo_oid[] = { 1, 3, 6, 1, 4, 1, 2, 6, 248, 1, 1, 0 };
-
-	/* Set the snmpTrapOid.0 value */
-	snmp_varlist_add_variable(&var_list,
-		snmptrap_oid, OID_LENGTH(snmptrap_oid),
-		ASN_OBJECT_ID,
-		(const u_char *)ltfsErrorTrap_oid,
-		sizeof(ltfsErrorTrap_oid));
-
-	/* Add any objects from the trap definition */
-	snmp_varlist_add_variable(&var_list,
-		ltfsTrapInfo_oid,
-		OID_LENGTH(ltfsTrapInfo_oid),
-		ASN_OCTET_STR,
-		(const u_char *)str,
-		strlen(str));
-
-	/* Send the trap to the list of configured destinations and clean up */
-	send_v2trap(var_list);
-	snmp_free_varbind(var_list);
-	return SNMP_ERR_NOERROR;
-#else
 	return 0;
-#endif
 }

@@ -51,9 +51,7 @@
 #include <fuse.h>
 #include "key_format_ltfs.h"
 
-#ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
-#endif
 
 struct kmi_simple_options_data {
 	unsigned char *dk;             /**< Data key */
@@ -134,7 +132,6 @@ int simple_parse_opts(void *opt_args)
 	struct fuse_args *args = (struct fuse_args *) opt_args;
 	int ret;
 
-#ifdef mingw_PLATFORM
 	/* Initialized kmi_simple_options_data because it is reused by multi mounts on Windows. */
 	free(priv.dk);
 	priv.dk = NULL;
@@ -146,7 +143,6 @@ int simple_parse_opts(void *opt_args)
 	priv.dki_for_format = NULL;
 	free(priv.dk_list);
 	priv.dk_list = NULL;
-#endif
 
 	/* fuse_opt_parse can handle a NULL device parameter just fine */
 	ret = fuse_opt_parse(args, &priv, kmi_simple_options, null_parser);
@@ -213,16 +209,9 @@ struct kmi_ops *kmi_get_ops(void)
 	return &simple_ops;
 }
 
-#ifndef mingw_PLATFORM
-extern char kmi_simple_dat[];
-#endif
 
 const char *kmi_get_message_bundle_name(void ** const message_data)
 {
-#ifndef mingw_PLATFORM
-	*message_data = kmi_simple_dat;
-#else
 	*message_data = NULL;
-#endif
 	return "kmi_simple";
 }

@@ -79,7 +79,6 @@ root:table {
 		I1027E:string{ "Cannot remove the existing target path" }
 		I1028E:string{ "Cannot remove the non-empty directory" }
 		I1029E:string{ "Cannot remove the root directory" }
-		I1030E:string{ "Cannot move the directory because of the MacFUSE bug" }
 		I1031E:string{ "Cannot rename files or directories in the directory" }
 		I1032E:string{ "Block read from tape is smaller than expected" }
 		I1033E:string{ "Operation is only valid on files" }
@@ -150,17 +149,6 @@ root:table {
 		I1100E:string{ "The disk image already exists" }
 		I1101E:string{ "The disk image is already mounted" }
 		I1102E:string{ "The disk image is not mounted" }
-		I1103E:string{ "/etc/mtab is not a regular file" }
-		I1104E:string{ "Failed to open /etc/mtab" }
-		I1105E:string{ "Failed to lock /etc/mtab" }
-		I1106E:string{ "Failed to seek /etc/mtab" }
-		I1107E:string{ "Failed to update /etc/mtab" }
-		I1108E:string{ "Failed to flush /etc/mtab" }
-		I1109E:string{ "Failed to unlock /etc/mtab" }
-		I1110E:string{ "Failed to close /etc/mtab" }
-		I1111E:string{ "Failed to copy /etc/mtab to temporary file" }
-		I1112E:string{ "Failed to open the temporary file for /etc/mtab" }
-		I1113E:string{ "Failed to seek the temporary file for /etc/mtab" }
 		I1114E:string{ "Failed to create a directory tree for the disk image" }
 		I1115E:string{ "Failed to cache dentry due to limitation of host filesystem" }
 		I1116E:string{ "The disk image reached the maximum size" }
@@ -210,8 +198,6 @@ root:table {
 		I1162E:string{ "Failed to set/get Extended Attribute" }
 		I1163E:string{ "Failed to perform file tree walk" }
 		I1164E:string{ "Failed to update time stamp" }
-		I1165E:string{ "Block device is required" }
-		I1166E:string{ "Disk quota exceeded" }
 		I1167E:string{ "Too many open files in system" }
 		I1168E:string{ "Link dir exists" }
 		I1169E:string{ "No dmap entry" }
@@ -231,7 +217,6 @@ root:table {
 		I1183E:string{ "Incompatible cache file is detected" }
 		I1184E:string{ "Dcache is not initialized yet" }
 		I1185E:string{ "The multi-node config file is locked" }
-		I1186E:string{ "Failed to create POSIX message queue" }
 		I1187E:string{ "Failed to fork process" }
 		I1188E:string{ "No ACK message is received from child process" }
 		I1189E:string{ "Node type detection is failed" }

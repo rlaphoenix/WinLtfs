@@ -57,16 +57,12 @@
 *************************************************************************************
 */
 
-#ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#endif
 #include "ltfs.h"
 #include "ltfs_fsops.h"
 #include "arch/filename_handling.h" // HPE MD 22/09/2017 Added support for SNIA 2.4 percent encoding
 #include "xattr.h"
-#ifdef mingw_PLATFORM
 #include "attr_ioctl.h"
-#endif
 #include "fs.h"
 #include "xml_libltfs.h"
 #include "pathname.h"
@@ -74,14 +70,10 @@
 #include "ltfs_internal.h"
 #include "arch/time_internal.h"
 #include "periodic_sync.h"
-#ifdef __APPLE__
-#include "arch/osx/osx_string.h"
-#endif /* __APPLE__ */
 
 int _xattr_seek(struct xattr_info **out, struct dentry *d, const char *name);
 int _xattr_lock_dentry(const char *name, bool modify, struct dentry *d, struct ltfs_volume *vol);
 void _xattr_unlock_dentry(const char *name, bool modify, struct dentry *d, struct ltfs_volume *vol);
-const char *_xattr_strip_name(const char *name);
 int _xattr_list_physicals(struct dentry *d, char *list, size_t size);
 bool _xattr_is_virtual(struct dentry *d, const char *name, struct ltfs_volume *vol);
 int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char *name,
@@ -366,7 +358,6 @@ int xattr_list(struct dentry *d, char *list, size_t size, struct ltfs_volume *vo
 	}
 	nbytes += ret;
 
-#ifdef mingw_PLATFORM
 	/* Only cheap, side-effect-free metadata on root EA enumeration. Hardware
 	 * diagnostics and file metadata use the output-only query interface. */
 	if (d == vol->index->root) {
@@ -381,7 +372,6 @@ int xattr_list(struct dentry *d, char *list, size_t size, struct ltfs_volume *vo
 			nbytes += length;
 		}
 	}
-#endif
 
 	/*
 	 * There used to be an _xattr_list_virtuals function which was called here.
@@ -587,26 +577,6 @@ void _xattr_unlock_dentry(const char *name, bool modify, struct dentry *d, struc
 }
 
 /**
- * Strip a Linux namespace prefix from the given xattr name and return the position of the suffix.
- * If the name is "user.X", return the "X" portion. Otherwise, return an error.
- * This function does nothing on Mac OS X.
- * @param name Name to strip.
- * @return A pointer to the name suffix, or NULL to indicate an invalid name. On Mac OS X,
- *         always returns @name.
- */
-const char *_xattr_strip_name(const char *name)
-{
-#if (defined (__APPLE__) || defined (mingw_PLATFORM))
-	return name;
-#else
-	if (strstr(name, "user.") == name)
-		return name + 5;
-	else
-		return NULL;
-#endif
-}
-
-/**
  * List real extended attributes for a dentry. Must be called with a read lock held on
  * the dentry's meta_lock.
  * @param d Dentry to list.
@@ -621,14 +591,6 @@ int _xattr_list_physicals(struct dentry *d, char *list, size_t size)
 	int prefixlen = 0, namelen;
 	int ret = 0, nbytes = 0;
 
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
-	ret = pathname_unformat("user.", &prefix);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "11141E", ret);
-		return ret;
-	}
-	prefixlen = strlen(prefix);
-#endif /* (!defined (__APPLE__)) && (!defined (mingw_PLATFORM)) */
 
 	TAILQ_FOREACH(entry, &d->xattrlist, list) {
 
@@ -655,9 +617,6 @@ int _xattr_list_physicals(struct dentry *d, char *list, size_t size)
 	}
 
 out:
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
-	free(prefix);
-#endif /* (!defined (__APPLE__)) && (!defined (mingw_PLATFORM)) */
 	if (ret < 0)
 		return ret;
 	return nbytes;

@@ -56,6 +56,6 @@ ltfs_LDADD = ../src/libltfs/libltfs.la -L../messages -lbin_ltfs -lbin_libltfs
 # 
 # Platform driver is the Windows driver
 #
-platform_drivers = tape_drivers/windows/ltotape
+platform_drivers = tape_drivers/windows/ltotape tape_drivers/generic/file
 
 SUBDIRS = libltfs kmi . iosched utils $(platform_drivers) 

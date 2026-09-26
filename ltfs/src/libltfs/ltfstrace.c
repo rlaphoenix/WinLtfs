@@ -680,13 +680,7 @@ int ltfs_trace_init(void)
 
 int ltfs_trace_get_offset(char** val)
 {
-#ifdef __APPLE__
 	return asprintf(val, "%llu", start_offset);
-#elif defined(mingw_PLATFORM)
-	return asprintf(val, "%llu", start_offset);
-#else
-	return asprintf(val, "%lu.%09lu", start_offset.tv_sec, start_offset.tv_nsec);
-#endif
 }
 
 void ltfs_trace_destroy(void)
@@ -714,45 +708,6 @@ void ltfs_trace_set_work_dir(const char *dir)
 
 int ltfs_dump(char *fname)
 {
-#ifndef mingw_PLATFORM
-	int ret = 0, num_args = 0, status;
-	char *path, *pid;
-	pid_t fork_pid;
-	const unsigned int max_arguments = 32;
-	const char *args[max_arguments];
-
-	if(!work_dir)
-		return -LTFS_BAD_ARG;
-
-	ret = asprintf(&path, "%s/%s", work_dir, fname);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10001E", __FILE__);
-		return -LTFS_NO_MEMORY;
-	}
-
-	ret = asprintf(&pid, "%ld", (long)getpid());
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10001E", __FILE__);
-		return -LTFS_NO_MEMORY;
-	}
-
-	fork_pid = fork();
-	if (fork_pid < 0) {
-		ltfsmsg(LTFS_ERR, "17233E");
-	} else  if (fork_pid == 0) {
-		args[num_args++] = "/usr/bin/gcore";
-		args[num_args++] = "-o";
-		args[num_args++] = path;
-		args[num_args++] = pid;
-		args[num_args++] = NULL;
-
-		execv(args[0], (char **) args);
-		exit(errno);
-	} else {
-		waitpid(fork_pid, &status, 0);
-		ret = WEXITSTATUS(status);
-	}
-#endif
 	return 0;
 }
 

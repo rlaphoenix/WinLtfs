@@ -69,9 +69,6 @@ extern "C" {
 #include <stdlib.h>
 #include <stdbool.h>
 
-#ifdef __APPLE__
-#include <ICU/unicode/utypes.h>
-#else
 
 /* 
  * OSR
@@ -81,18 +78,13 @@ extern "C" {
  * defined. Strange, yes, but true 
  *  
  */
-#if defined(HPE_mingw_BUILD) && defined(__MINGW32__)
 
 #undef __MINGW32__
 #include <unicode/utypes.h>
 #define __MINGW32__
 
-#else 
-#include <unicode/utypes.h>
-#endif /* #if defined(HPE_mingw_BUILD) && defined(__MINGW32__) */
 
 
-#endif
 
 int pathname_format(const char *name, char **new_name, bool validate, bool path);
 int pathname_unformat(const char *name, char **new_name);

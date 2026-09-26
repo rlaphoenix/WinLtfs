@@ -35,9 +35,9 @@
 ##
 ## COMPONENT NAME:  IBM Linear Tape File System
 ##
-## FILE NAME:       Makefile.osx
+## FILE NAME:       Makefile.am
 ##
-## DESCRIPTION:     Automake template for LTFS message libraries on Linux.
+## DESCRIPTION:     Automake template for LTFS message libraries.
 ##
 ## AUTHOR:          Brian Biskeborn
 ##                  IBM Almaden Research Center
@@ -65,6 +65,7 @@ RESOURCES = \
 	kmi_simple_dat.o \
 	kmi_flatfile_dat.o \
 	driver_ltotape_dat.o \
+	driver_generic_file_dat.o \
 	iosched_fcfs_dat.o \
 	iosched_unified_dat.o \
 	bin_libltfs_dat.o \

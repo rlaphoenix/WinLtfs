@@ -182,55 +182,11 @@ int xml_save_tag(xmlTextReaderPtr reader, size_t *tag_count, unsigned char ***ta
 	unsigned char **t;
 	unsigned char *tag_value;
 
-#if LIBXML_VERSION < 20620
-	/* OS X 10.5 ships with an old version of libxml2 that doesn't
-	 * support xmlTextReaderReadOuterXml. */
-	int ret, bufsize;
-	xmlDocPtr doc;
-	xmlNodePtr node;
-	xmlBufferPtr buf;
-
-	/* NOTE: caller must do xmlFreeDoc(xmlTextReaderCurrentDoc(reader)) when parsing is
-	 * finished, as this call modifies the behavior of xmlFreeTextReader. */
-	doc = xmlTextReaderCurrentDoc(reader);
-	if (! doc) {
-		ltfsmsg(LTFS_ERR, "17200E", "xmlTextReaderCurrentDoc");
-		return -1;
-	}
-	node = xmlTextReaderExpand(reader);
-	if (! node) {
-		ltfsmsg(LTFS_ERR, "17200E", "xmlTextReaderExpand");
-		return -1;
-	}
-	buf = xmlBufferCreate();
-	if (! buf) {
-		ltfsmsg(LTFS_ERR, "17200E", "xmlBufferCreate");
-		return -1;
-	}
-
-	ret = xmlNodeDump(buf, doc, node, 0, 0);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17200E", "xmlNodeDump");
-		return -1;
-	}
-	bufsize = xmlBufferLength(buf);
-	tag_value = malloc(bufsize + 1);
-	if (! tag_value) {
-		xmlBufferFree(buf);
-		ltfsmsg(LTFS_ERR, "10001E", "_xml_save_tag: tag value");
-		return -1;
-	}
-	memcpy(tag_value, xmlBufferContent(buf), bufsize);
-	tag_value[bufsize] = '\0';
-	xmlBufferFree(buf);
-
-#else
 	tag_value = xmlTextReaderReadOuterXml(reader);
 	if (! tag_value) {
 		ltfsmsg(LTFS_ERR, "17091E");
 		return -1;
 	}
-#endif /* __APPLE__ */
 
 	t = realloc(*tag_list, c * sizeof(unsigned char *));
 	if (! t) {

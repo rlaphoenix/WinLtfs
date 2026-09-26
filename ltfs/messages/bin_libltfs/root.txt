@@ -352,7 +352,6 @@ root:table {
 		11256I:string { "Appending a file mark to the index partition" }
 		11257I:string { "No index found in the index partition" }
 		11258I:string { "No index found in the data partition" }
-		11259I:string { "Cannot move directory: Directory move is prohibited because of a MacFUSE bug" }
 		11260E:string { "Plug-in \'%s\' was not found in the configuration file" }
 		11261E:string { "Cannot load plug-in: %s" }
 		11262E:string { "Cannot unload plug-in: %s" }
