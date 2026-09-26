@@ -105,46 +105,61 @@ ltfs.exe T: -o config_file=ltfs.conf -o devname=TAPE0
 ```text
 usage: ltfs mountpoint [options]
 
-general options:
-    -o opt,[opt...]           mount options
-    -h   --help               print help
-    -V   --version            print version
+    -o opt,[opt...]        mount options
+    -h   --help            print help
+    -V   --version         print version
+
 
 LTFS options:
     -o config_file=<file>     Configuration file (default: C:/ProgramData/WinLtfs/ltfs.conf)
-    -o work_directory=<dir>   LTFS work directory (default: /tmp/ltfs)
+    -o work_directory=<dir>   LTFS work directory (default: c:/tmp/ltfs)
     -o atime                  Update index if only access times have changed
     -o noatime                Do not update index if only access times have changed (default)
     -o tape_backend=<name>    tape backend to use (default: ltotape)
-    -o iosched_backend=<name> I/O scheduler to use (default: unified, "none" to disable)
+    -o iosched_backend=<name> I/O scheduler implementation to use (default: unified, use "none" to disable)
     -o umask=<mode>           Override default permission mask (3 octal digits, default: 000)
     -o fmask=<mode>           Override file permission mask (3 octal digits, default: 000)
     -o dmask=<mode>           Override directory permission mask (3 octal digits, default: 000)
-    -o min_pool_size=<num>    Minimum write cache pool size, 1 MB objects (default: 25)
-    -o max_pool_size=<num>    Maximum write cache pool size, 1 MB objects (default: 50)
-    -o rules=<rules>          Rules for choosing files to write to the index partition
-                              (e.g. size=1M, size=1M/name=*.jpg:*.png)
-    -o quiet                  Disable informational messages
-    -o trace                  Enable diagnostic output
-    -o syslogtrace            Enable diagnostic output to stderr and syslog
-    -o fulltrace              Enable full call tracing
+    -o min_pool_size=<num>    Minimum write cache pool size. Cache objects are 1 MB each (default: 25)
+    -o max_pool_size=<num>    Maximum write cache pool size. Cache objects are 1 MB each (default: 50)
+    -o rules=<rules>          Rules for choosing files to write to the index partition.
+                              The syntax of the rule argument is:
+                              size=1M
+                              size=1M/name=pattern
+                              size=1M/name=pattern1:pattern2:pattern3
+                              A file is written to the index partition if it is no larger
+                              than the given size AND matches at least one of the name
+                              patterns (if specified). The size argument accepts K, M, and G
+                              suffixes. Name patterns might contain the special characters
+                              '?' (match any single character) and '*' (match zero or more
+                              characters).
+    -o quiet                  Disable informational messages (same as verbose=1)
+    -o trace                  Enable diagnostic output (same as verbose=3)
+    -o syslogtrace            Enable diagnostic output to stderr and the Windows Event Log (errors only, same as verbose=303)
+    -o fulltrace              Enable full call tracing (same as verbose=4)
     -o verbose=<num>          Override output verbosity directly (default: 2)
     -o eject                  Eject the cartridge after unmount
     -o noeject                Do not eject the cartridge after unmount (default)
-    -o sync_type=<type>       Sync type: time@<min>, close, or unmount (default: time@5)
-    -o force_mount_no_eod     Skip EOD existence check when mounting (read-only)
-    -o rollback_mount=<gen>   Mount a previous index generation (read-only)
-    -o release_device         Clear device reservation (use with -o devname)
-    -o capture_index          Capture latest index to the work directory at unmount
-    -o request_trace          Record recent requests in memory, dump to work directory at unmount
-    -o request_profiler       Stream request, I/O scheduler and tape driver profiles to
-                              work directory (implies request_trace)
+    -o sync_type=<type>       Specify sync type (default: time@5)
+                              <type> should be specified as follows:
+                              time@min:  LTFS attempts to write an index each 'min' minutes.
+                                         min should be a decimal number from 1 to 35791394
+                                         (default: min=5)
+                              close:     LTFS attempts to write an index when a file is closed (not recommended for normal use)
+                              unmount:   LTFS attempts to write an index when the medium is unmounted
+    -o force_mount_no_eod     Skip EOD existence check when mounting (read-only mount)
+                              Only use for a CM corrupted medium
+    -o rollback_mount=<gen>   Attempt to mount on previous index generation (read-only mount)
+    -o release_device         Clear device reservation (should be specified with -o devname)
+    -o capture_index          Capture latest index to work directory at unmount
+    -o request_trace          Record recent requests in memory and dump them to work directory at unmount
+    -o request_profiler       Stream request, I/O scheduler and tape driver profiles to work directory (implies request_trace)
+    -o scsi_append_only_mode=<on|off>  Set the tape device append-only mode (default=on)
     -a                        Advanced help, including standard FUSE options
 
 LTOTAPE backend options:
-    -o devname=<dev>          tape device (default=/dev/nst0)
-    -o log_directory=<dir>    log snapshot directory (default=/var/log)
-    -o nosizelimit            remove 512kB limit (NOT RECOMMENDED)
+  -o log_directory=<dir>      log snapshot directory (default=C:\Users\<user>\AppData\Local\Temp\)
+  -o nosizelimit              remove 512kB limit (NOT RECOMMENDED)
 ```
 
 ### `mkltfs.exe`
@@ -157,33 +172,50 @@ mkltfs.exe -i ltfs.conf -d TAPE0 -s ABCDEF -n "My LTFS Tape"
 ```
 
 ```text
-Usage: mkltfs <options>
+Usage: mkltfs.exe <options>
 
 Available options are:
   -d, --device=<name>       Tape device (required)
   -f, --force               Force to format medium
   -s, --tape-serial=<id>    Tape serial number (6 alphanumeric ASCII characters)
   -n, --volume-name=<name>  Tape volume name (LTFS VOLUME by default)
-  -r, --rules=<rules>       Rules for choosing files to write to the index partition
-                            (e.g. size=1M, size=1M/name=*.jpg:*.png). Size accepts
-                            K, M, G suffixes; names may use '?' and '*'.
+  -r, --rules=<rules>       Rules for choosing files to write to the index partition.
+                            The syntax of the rule argument is:
+                                size=1M
+                                size=1M/name=pattern
+                                size=1M/name=pattern1:pattern2:pattern3
+                            A file is written to the index partition if it is no larger
+                            than the given size AND matches at least one of the name
+                            patterns (if specified). The size argument accepts K, M, and G
+                            suffixes. Name patterns might contain the special characters
+                            '?' (match any single character) and '*' (match zero or more
+                            characters).
       --no-override         Disallow mount-time data placement policy changes
-  -w, --wipe                Restore the medium to an unpartitioned (legacy scratch) medium
+  -w, --wipe                Restore the LTFS medium to an unpartitioned medium (format to a legacy scratch medium)
   -q, --quiet               Suppress progress information and general messages
   -t, --trace               Enable function call tracing
-      --syslogtrace         Enable diagnostic output to stderr and syslog
+      --syslogtrace         Enable diagnostic output to stderr and the Windows Event Log (errors only)
   -V, --version             Version information
   -h, --help                This help
   -p, --advanced-help       Full help, including advanced options
   -g, --interactive         Interactive mode
-  -i, --config=<file>       Use the specified configuration file
+  -i, --config=<file>       Use the specified configuration file (default: C:/ProgramData/WinLtfs/ltfs.conf)
   -e, --backend=<name>      Use the specified tape device backend (default: ltotape)
   -b, --blocksize=<num>     Set the LTFS record size (default: 524288)
   -c, --no-compression      Disable compression on the volume
   -k, --keep-capacity       Keep the tape medium's total capacity proportion
   -x, --fulltrace           Enable full function call tracing (slow)
-      --long-wipe           Unformat and erase all data by overwriting (takes 3+ hours,
-                            cannot be interrupted)
+      --long-wipe           Unformat the medium and erase any data on the tape by overwriting special data pattern.
+                            This operation takes over 3 hours. Once you start, you cannot interrupt it.
+
+LTOTAPE backend options:
+  -o log_directory=<dir>      log snapshot directory (default=C:\Users\<user>\AppData\Local\Temp\)
+  -o nosizelimit              remove 512kB limit (NOT RECOMMENDED)
+
+Usage example:
+  mkltfs.exe --device=TAPE0 --rules="size=100K"
+  mkltfs.exe --device=TAPE0 --rules="size=1M/name=*.jpg"
+  mkltfs.exe --device=TAPE0 --rules="size=1M/name=*.jpg:*.png"
 ```
 
 ### `ltfsck.exe`
@@ -196,33 +228,48 @@ ltfsck.exe -i ltfs.conf TAPE0
 ```
 
 ```text
-Usage: ltfsck [options] filesys
+Usage: ltfsck.exe [options] device
 
-  filesys                         Device file for the tape drive
+device                            Tape drive name (e.g. TAPE0)
 
 Available options are:
   -g, --generation=<generation>   Specify the generation to roll back
   -r, --rollback                  Roll back to the point specified by -g
-  -n, --no-rollback               Do not roll back; verify the point specified by -g (default)
-  -f, --full-recovery             Recover extra data blocks into _ltfs_lostandfound
-  -z, --deep-recovery             Recover a cartridge with missing EOD
+  -F, --Force                     Force rollback when there are files open for write in the index. (Effective only for -r option)
+  -n, --no-rollback               Do not roll back. Verify the point specified by -g (default)
+  -f, --full-recovery             Recover extra data blocks into directory _ltfs_lostandfound
+  -z, --deep-recovery             Recover EOD missing cartridge.
+                                  Some blocks might be erased, but recover to final unmount point
+                                  with an index version of at least  2.0.0  or earlier.
+                                  (Must be used for a cartridge that cannot be recovered by a normal option.)
   -l, --list-rollback-points      List rollback points
-  -m, --full-index-info           Display full index information (with -l only)
-  -v, --traverse=<strategy>       Traverse mode for listing rollback points:
-                                  forward or backward (default: backward)
+  -m, --full-index-info           Display full index information (Effective only for -l option)
+  -w, --list-open-files           List open for write files at rollback points. (Effective only for -l option)
+  -c, --count-open-files          Count open for write files at rollback points. (Effective only for -l option)
+  -v, --traverse=<strategy>       Set traverse mode for listing roll back points. Strategy should be forward or backward. (default: backward)
   -j, --erase-history             Erase history at rollback
   -k, --keep-history              Keep history at rollback (default)
   -q, --quiet                     Suppress informational messages
   -t, --trace                     Enable diagnostic output
-      --syslogtrace               Enable diagnostic output to stderr and syslog
+      --syslogtrace               Enable diagnostic output to stderr and the Windows Event Log (errors only)
   -V, --version                   Version information
   -h, --help                      This help
   -p, --advanced-help             Full help, including advanced options
-  -i, --config=<file>             Use the specified configuration file
+  -i, --config=<file>             Use the specified configuration file (default: C:/ProgramData/WinLtfs/ltfs.conf)
   -e, --backend=<name>            Override the default tape device backend
   -x, --fulltrace                 Enable full function call tracing (slow)
-      --capture-index             Capture index information to the current directory
-      --salvage-rollback-points   List rollback points of a cartridge that has no EOD
+      --capture-index             Capture index information to the current directory (-g is effective for this option)
+      --salvage-rollback-points   List the rollback points of the cartridge that has no EOD
+  -P, --Pipe                      Format the list of rollback points for consumption by another process
+
+LTOTAPE backend options:
+  -o log_directory=<dir>      log snapshot directory (default=C:\Users\<user>\AppData\Local\Temp\)
+  -o nosizelimit              remove 512kB limit (NOT RECOMMENDED)
+
+Usage example:
+  ltfsck.exe TAPE0
+  ltfsck.exe --generation --rollback TAPE0
+  ltfsck.exe --deep-recovery --full-recovery TAPE0
 ```
 
 ### `unltfs.exe`
@@ -236,17 +283,18 @@ unltfs.exe -i ltfs.conf -d TAPE0
 ```
 
 ```text
-Usage: unltfs <options>
+Usage: unltfs.exe <options>
 
-  -d, --device=<name> specifies the tape drive to use
-  -y, --justdoit      omit normal verification steps, reformat without prompting
-  -e, --eject         eject tape after operation completes successfully
-  -q, --quiet         suppress all progress output
-  -t, --trace         display detailed progress
-  -h, --help          shows this help
-  -i, --config=<file> override the default config file
-  -b, --backend       specify a different tape backend subsystem
-  -x, --fulltrace     display debug information (verbose)
+where:
+	-d, --device=<name> specifies the tape drive to use
+	-y, --justdoit      omits normal verification steps, reformats without further prompting
+	-e, --eject         eject tape after operation completes successfully
+	-q, --quiet         suppresses all progress output
+	-t, --trace         displays detailed progress
+	-h, --help          shows this help
+	-i, --config=<file> overrides the default config file
+	-b, --backend       specifies a different tape backend subsystem
+	-x, --fulltrace     displays debug information (verbose)
 ```
 
 ## Reading tape attributes

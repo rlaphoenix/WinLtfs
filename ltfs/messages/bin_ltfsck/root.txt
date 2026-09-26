@@ -154,8 +154,8 @@ root:table {
 		// 2.2.0.2
 
 		// Help messages
-		16400I:string { "Usage: %s [options] filesys" }
-		16401I:string { "filesys                           Device file for the tape drive" }
+		16400I:string { "Usage: %s [options] device" }
+		16401I:string { "device                            Tape drive name (e.g. TAPE0)" }
 		16402I:string { "Available options are:" }
 		16403I:string { "  -g, --generation=<generation>   Specify the generation to roll back" }
 		16404I:string { "  -r, --rollback                  Roll back to the point specified by -g" }
@@ -182,7 +182,7 @@ root:table {
 		16422I:string { "  -m, --full-index-info           Display full index information (Effective only for -l option)" }
 		16423I:string { "      --kmi-backend=<name>        Override the default key manager interface backend" }
 		16424I:string { "      --capture-index             Capture index information to the current directory (-g is effective for this option)" }
-		16425I:string { "      --syslogtrace               Enable diagnostic output to stderr and syslog" }
+		16425I:string { "      --syslogtrace               Enable diagnostic output to stderr and the Windows Event Log (errors only)" }
 		16426I:string { "  -V, --version                   Version information" }
 		16427I:string { "      --salvage-rollback-points   List the rollback points of the cartridge that has no EOD" } // 2.2.0.2
 		16428I:string { "Verifying the rollback point based on the index generation %d" }

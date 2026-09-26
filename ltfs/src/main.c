@@ -176,7 +176,7 @@ void single_drive_advanced_usage(const char *default_driver, struct ltfs_fuse_da
 	ltfsresult("14441I", LTFS_INFO); /* -o verbose=<num> */
 	ltfsresult("14425I"); /* -o eject */
 	ltfsresult("14439I"); /* -o noeject */
-	ltfsresult("14480I"); /* -o sync_type=type */
+	ltfsresult("14427I", LONG_MAX / 60); /* -o sync_type=type */
 	ltfsresult("14443I"); /* -o force_mount_no_eod */
 	/*ltfsresult("14436I");*/ /* -o device_list */
 	ltfsresult("14437I"); /* -o rollback_mount */
@@ -215,7 +215,7 @@ void usage(char *progname, struct ltfs_fuse_data *priv)
 		ltfsresult("14404I", LTFS_DEFAULT_WORK_DIR);      /* -o work_directory=<dir> */
 		ltfsresult("14405I");                             /* -o trace */
 		ltfsresult("14425I");                             /* -o eject */
-		ltfsresult("14480I", LONG_MAX / 60);              /* -o sync_type=type */
+		ltfsresult("14427I", LONG_MAX / 60);              /* -o sync_type=type */
 		ltfsresult("14443I");                             /* -o force_mount_no_eod */
 		/*ltfsresult("14436I");*/                         /* -o device_list */
 		ltfsresult("14437I");                             /* -o rollback_mount */

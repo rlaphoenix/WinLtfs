@@ -161,7 +161,7 @@ root:table {
 		14201E:string { "Mountpoint \"%s\" specified but not accessible" }		
 
 		// Help messages
-		14400I:string { "usage: %s mountpoint [options]" }
+		14400I:string { "usage: %s <drive letter or directory> [options]" }
 		14401I:string { "LTFS options:" }
 		14402I:string { "    -o devname=<dev>          Tape device (default: %s)" }
 		14403I:string { "    -o devname=<dev>          Tape device" }
@@ -202,9 +202,8 @@ root:table {
 				        "                              <type> should be specified as follows:\n"
 						"                              time@min:  LTFS attempts to write an index each 'min' minutes.\n"
 						"                                         min should be a decimal number from 1 to %ld\n"
-						"                                         It is equivalent to \"-o sync_type=unmount\" when 0 is specified\n"
 						"                                         (default: min=5)\n"
-						"                              close:     LTFS attempts to write an index when a file is closed\n"
+						"                              close:     LTFS attempts to write an index when a file is closed (not recommended for normal use)\n"
 						"                              unmount:   LTFS attempts to write an index when the medium is unmounted" }
 
 		// Reserved 14428I
@@ -228,7 +227,7 @@ root:table {
 		// Reserved 14445I
 		// Reserved 14446I
 		// Reserved 14447I
-		14448I:string { "    -o release_device         Clear device reservation (should be specified with -o devname"}
+		14448I:string { "    -o release_device         Clear device reservation (should be specified with -o devname)" }
 		// Reserved 14449I
 		// Reserved 14450I
 		// Reserved 14451I
@@ -248,17 +247,9 @@ root:table {
 		14464I:string { "%s version %s (build %d)" } // Used by HPE-SOS
 		// Reserved 14465I
 		// Reserved 14466I
-		14467I:string { "    -o syslogtrace            Enable diagnostic output to stderr and syslog(same as verbose=303)" }
+		14467I:string { "    -o syslogtrace            Enable diagnostic output to stderr and the Windows Event Log (errors only, same as verbose=303)" }
 		// Reserved 14468I // 2.2.0.2
 		
-		// Added for windows as currently we are not supporting sync_type as close
-		14480I:string { "    -o sync_type=<type>       Specify sync type (default: time@5)\n"
-				        "                              <type> should be specified as follows:\n"
-						"                              time@min:  LTFS attempts to write an index each 'min' minutes.\n"
-						"                                         min should be a decimal number from 1 to %ld\n"
-						"                                         It is equivalent to \"-o sync_type=unmount\" when 0 is specified\n"
-						"                                         (default: min=5)\n"
-						"                              unmount:   LTFS attempts to write an index when the medium is unmounted" }
 		14481I:string { "The Permanent write error bit is set in MAM " }
 		14482E:string { "Failed to find a valid index from either partition to do a read-only mount as PWE is set in MAM" }
         14483I:string { "The Data Partition Permanent write error bit is set in MAM " }
