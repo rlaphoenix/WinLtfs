@@ -894,6 +894,22 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	 * processing is deferred until ltfs_fuse_mount
 	 *
 	 */
+	/* -o release_device: unload any cartridge, clear the eject lock and drop the
+	 * drive reservation (e.g. after a crashed mount), then exit without mounting. */
+	if (priv->release_device) {
+		ret = ltfs_device_open(priv->devname, priv->driver_plugin.ops, priv->data);
+		if (ret < 0) {
+			/* Could not open device */
+			ltfsmsg(LTFS_ERR, "10004E", priv->devname);
+		} else {
+			ltfs_release_medium(priv->data);
+			ltfs_device_close(priv->data);
+			ltfsmsg(LTFS_INFO, "14495I", priv->devname);
+		}
+		ltfs_volume_free(&priv->data);
+		ltfs_unset_signal_handlers();
+		return ret < 0 ? 1 : 0;
+	}
 	/* OSR */
 	/* Save the arguments so we can parse them later at the init
 	 * callback
