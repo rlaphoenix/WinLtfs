@@ -496,7 +496,6 @@ int main(int argc, char **argv)
 
 	/* Suppress warning on Windows builds. */
 	(void) lang;
-	(void) mount_options;
 
 	priv->verbose = LTFS_INFO;
 	priv->allow_other = 1;
@@ -539,7 +538,21 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	/* Not supported on Windows. TODO: Verify this again.*/
+	/* Bring in extra mount options set in the config file ("option single-drive <opt>").
+	 * They are inserted before the command line options, so the command line wins. */
+	mount_options = config_file_get_options("single-drive", priv->config);
+	if (! mount_options)
+		return 1;
+	for (i=0; mount_options[i]; ++i) {
+		ret = fuse_opt_insert_arg(&args, i+1, mount_options[i]);
+		if (ret < 0) {
+			/* Could not enable FUSE option */
+			ltfsmsg(LTFS_ERR, "14001E", mount_options[i], ret);
+			return 1;
+		}
+		free(mount_options[i]);
+	}
+	free(mount_options);
 
 	/* Parse command line options again, this time for real */
 	priv->first_parsing_pass = false;

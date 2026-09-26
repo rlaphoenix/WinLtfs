@@ -102,6 +102,15 @@ generic FUSE options are omitted below; run with `-a` for the full advanced help
 ltfs.exe T: -o config_file=ltfs.conf -o devname=TAPE0
 ```
 
+Mount options can also be set for every mount in `ltfs.conf`, one per line as
+`option single-drive <option>`. Options given on the command line take precedence.
+
+```text
+option single-drive sync_type=unmount
+option single-drive work_directory=C:/ProgramData/WinLtfs/work
+option single-drive capture_index
+```
+
 ```text
 usage: ltfs mountpoint [options]
 

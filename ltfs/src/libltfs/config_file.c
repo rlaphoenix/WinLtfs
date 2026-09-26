@@ -250,7 +250,7 @@ char **config_file_get_options(const char *type, struct config_file *config)
 
 out_free:
 	for (count=0; count<pos; ++count)
-		free(list[pos]);
+		free(list[count]);
 	free(list);
 	return NULL;
 }
