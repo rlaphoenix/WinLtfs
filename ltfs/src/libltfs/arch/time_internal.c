@@ -59,20 +59,9 @@
 #include "libltfs/ltfslogging.h"
 #include "libltfs/arch/time_internal.h"
 
-#if defined (HPE_mingw_BUILD)
 # include "libltfs/arch/win/win_util.h"
-#endif
 
-#ifdef __APPLE__
-/*
- * In OSX environment time_t is always 64-bit width.
- * It is specified by compile option of Makefile.osx because autoconf architecture is
- * not used under OSX.
- */
-#define SIZEOF_TIME_T (8)
-#else
 #include "config.h"
-#endif
 
 #if ! ((SIZEOF_TIME_T == 4) || (SIZEOF_TIME_T == 8))
 #error time_t width is not 4 or 8
@@ -104,70 +93,6 @@ ltfs_time_t ltfs_timegm(struct tm *t)
 	return ret;
 }
 
-#ifdef __APPLE__
-#include <errno.h>
-#include <libkern/OSReturn.h>
-#include <mach/mach.h>
-#include <mach/clock.h>
-#include <mach/mach_time.h>
-
-void __get_time(_time_stamp_t* t)
-{
-	*t =  mach_absolute_time();
-}
-
-int get_timer_info(struct timer_info *ti)
-{
-	mach_timebase_info_data_t timebase;
-
-	(void) mach_timebase_info(&timebase);
-
-	ti->type = TIMER_TYPE_OSX;
-	ti->base = ((uint64_t)timebase.denom << 32) + timebase.numer;
-
-	return 0;
-}
-
-int get_osx_current_timespec(struct ltfs_timespec* now) {
-	int ret = -1;
-
-	kern_return_t kernel_return;
-	clock_serv_t  clock;
-	mach_timespec_t time;
-
-	kernel_return = host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &clock);
-	if (KERN_SUCCESS == kernel_return) {
-		kernel_return = clock_get_time(clock, &time);
-		if (KERN_SUCCESS == kernel_return) {
-			now->tv_sec  = time.tv_sec;
-			now->tv_nsec = time.tv_nsec;
-			ret = 0;
-		}
-	  }
-	if (ret != 0) {
-		errno = EINVAL;
-		ret = -1;
-	}
-	if (ret < 0)
-		ltfsmsg(LTFS_ERR, "11110E", ret);
-	return ret;
-}
-#elif defined(mingw_PLATFORM)
-#else
-int get_unix_current_timespec(struct ltfs_timespec* now)
-{
-	struct timespec ts;
-	int ret = clock_gettime(CLOCK_REALTIME, &ts);
-	now->tv_sec = ts.tv_sec;
-	now->tv_nsec = ts.tv_nsec;
-	return ret;
-}
-struct tm *get_unix_localtime(const ltfs_time_t *timep)
-{
-	time_t t = *timep;
-	return localtime(&t);
-}
-#endif
 
 int ltfs_get_days_of_year(int64_t nYear)
 {
@@ -313,19 +238,6 @@ struct timespec timespec_from_ltfs_timespec(const struct ltfs_timespec *pSrc)
 {
 	struct timespec ts;
 
-#ifdef __APPLE__
-	/*
-	 * In OSX environment time_t is always 64-bit width.
-	 * To use the same Makefile.osx for the limitation of build and test resources,
-	 * SDE 1.3 assumes that the value of sizeof(time_t) is 4.
-	 */
-	if (pSrc->tv_sec > 0x7FFFFFFFLL)
-		ts.tv_sec = 0x7FFFFFFFLL;
-	else if (pSrc->tv_sec < -0x80000000LL)
-		ts.tv_sec = -0x80000000LL;
-	else
-		ts.tv_sec = pSrc->tv_sec;
-#else
 	if (sizeof(time_t) == 4) {
 		if (pSrc->tv_sec > LONG_MAX)
 			ts.tv_sec = LONG_MAX;
@@ -335,7 +247,6 @@ struct timespec timespec_from_ltfs_timespec(const struct ltfs_timespec *pSrc)
 			ts.tv_sec = pSrc->tv_sec;
 	} else
 		ts.tv_sec = pSrc->tv_sec;
-#endif
 
 	ts.tv_nsec = pSrc->tv_nsec;
 	return ts;

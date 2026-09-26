@@ -36,7 +36,6 @@
 #ifndef __ltotape_diag_h
 #define __ltotape_diag_h
 
-#ifdef HPE_mingw_BUILD
 /* 
  * OSR
  *
@@ -54,7 +53,6 @@
 # ifndef daddr_t
 #  define daddr_t long
 # endif
-#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -63,14 +61,6 @@
 #include "libltfs/ltfslogging.h"
 #include "libltfs/ltfs.h"
 
-#ifndef HPE_mingw_BUILD
-# define MAX_PATH 256  /* Maximum path length; Windows already defines this */
-# ifdef __APPLE__
-#  include "../../linux/ibmtape/IBM_tape.h"
-# else
-#  include "../ibmtape/IBM_tape.h" /* for some common definitions */
-# endif
-#endif
 
 #include "ltotape_timeout.h"
 

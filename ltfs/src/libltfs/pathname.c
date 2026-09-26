@@ -60,14 +60,6 @@
 #include <stdio.h>
 #include <errno.h>
 
-#ifdef __APPLE__
-#include <ICU/unicode/uchar.h>
-#include <ICU/unicode/ustring.h>
-#include <ICU/unicode/utypes.h>
-#include <ICU/unicode/ucnv.h>
-#include <ICU/unicode/unorm.h>
-#include <ICU/unicode/normalizer2.h>
-#else
 
 /* 
  * OSR
@@ -77,7 +69,6 @@
  * defined. Strange, yes, but true 
  *  
  */
-#if defined(HPE_mingw_BUILD) && defined(__MINGW32__)
 
 #undef __MINGW32__
 #include <unicode/uchar.h>
@@ -85,16 +76,10 @@
 #include <unicode/utypes.h>
 #define __MINGW32__
 
-#else 
-#include <unicode/uchar.h>
-#include <unicode/ustring.h>
-#include <unicode/utypes.h>
-#endif /* #if defined(HPE_mingw_BUILD) && defined(__MINGW32__) */
 
 #include <unicode/ucnv.h>
 #include <unicode/unorm.h>
 #include <unicode/normalizer2.h>
-#endif
 
 #include "ltfs.h"
 #include "pathname.h"
@@ -866,20 +851,11 @@ int _pathname_system_to_utf16_icu(const char *src, UChar **dest)
 	UConverter *syslocale;
 	int32_t destlen;
 
-#ifndef HPE_mingw_BUILD
-	/* open converter for the system locale */
-	syslocale = ucnv_open(NULL, &err);
-	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11246E", err);
-		return -LTFS_ICU_ERROR;
-	}
-#else
 	syslocale = ucnv_open("UTF-8", &err);
 	if (U_FAILURE(err)) {
 		ltfsmsg(LTFS_ERR, "11246E", err);
 		return -LTFS_ICU_ERROR;
 	}
-#endif /* HPE_mingw_BUILD */
 
 	ucnv_setToUCallBack(syslocale, UCNV_TO_U_CALLBACK_STOP, NULL, NULL, NULL, &err);
 	if (U_FAILURE(err)) {
@@ -930,12 +906,7 @@ int _pathname_utf8_to_system_icu(const char *src, char **dest)
 	UErrorCode err = U_ZERO_ERROR;
 	int32_t destlen;
 
-#ifndef HPE_mingw_BUILD
-	/* If current locale is UTF-8, no conversion needed */
-	syslocale = ucnv_getDefaultName();
-#else
 	syslocale = "UTF-8";
-#endif /* HPE_mingw_BUILD */
 	if (! strcmp(syslocale, "UTF-8")) {
 		*dest = strdup(src);
 		if (! *dest)

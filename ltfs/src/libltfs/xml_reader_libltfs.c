@@ -462,11 +462,7 @@ int _xml_parser_init(xmlTextReaderPtr reader, const char *top_name, int *idx_ver
      * This allocation must be freed with xmlFree
      * 
      */
-#ifndef HPE_mingw_BUILD
-	free(value);
-#else
 	xmlFree(value);
-#endif	
 
 	return 0;
 }
@@ -1684,11 +1680,7 @@ int _xml_parse_one_xattr(xmlTextReaderPtr reader, struct dentry *d)
 			}
 
 /* HPE : need to free using xmlFree to clean up properly */
-#ifndef HPE_mingw_BUILD
-			free(xattr_type);
-#else
 			xmlFree(xattr_type);
-#endif	
 
 		} else
 			ignore_unrecognized_tag();

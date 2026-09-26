@@ -61,9 +61,7 @@
 extern "C" {
 #endif
 
-#ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
-#endif
 
 #include "libltfs/ltfs_fuse_version.h"
 #include <fuse.h>
@@ -75,15 +73,6 @@ extern "C" {
  * fuse_* names everywhere; on libfuse platforms (and Cygwin, where WinFsp
  * already aliases them) map them back onto the native types.
  */
-#if !defined(_WIN32) && !defined(__CYGWIN__)
-#define fuse_stat     stat
-#define fuse_statvfs  statvfs
-#define fuse_timespec timespec
-typedef off_t  fuse_off_t;
-typedef mode_t fuse_mode_t;
-typedef uid_t  fuse_uid_t;
-typedef gid_t  fuse_gid_t;
-#endif
 
 #include "libltfs/ltfs.h"
 #include "libltfs/plugin.h"
@@ -158,10 +147,8 @@ struct ltfs_fuse_data {
 	ltfs_mutex_t file_table_lock; /**< Controls access to 'open_files' */
 	struct file_info *file_table;    /**< Hash table of open file handles */
 	
-#ifdef HPE_mingw_BUILD
     struct fuse_args *args;        /**< OSR - The arguments to the program */
     char drive_letter[8];          /**< mount drive letter without colon, e.g. "T" (empty if not a drive-letter mount) */
-#endif
 };
 
 #ifdef __cplusplus

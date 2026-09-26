@@ -49,16 +49,7 @@
 #ifndef time_internal_h_
 #define time_internal_h_
 
-#ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
-#else
-#include <time.h>
-typedef int64_t	ltfs_time_t;
-struct ltfs_timespec {
-	ltfs_time_t	tv_sec;
-	long		tv_nsec;
-};
-#endif
 
 #define TIMER_TYPE_LINUX   (0x0000000000000000)
 #define TIMER_TYPE_OSX     (0x0000000000000001)
@@ -92,29 +83,10 @@ struct tm *ltfs_gmtime(const ltfs_time_t *timep, struct tm *result);
 struct timespec timespec_from_ltfs_timespec(const struct ltfs_timespec *pSrc);
 struct ltfs_timespec ltfs_timespec_from_timespec(const struct timespec *pSrc);
 
-#ifdef __APPLE__
-int get_osx_current_timespec(struct ltfs_timespec* now);
-#endif
 
-#ifdef __APPLE__
-int get_timer_info(struct timer_info *ti);
-#define _get_current_timespec(timespec) get_osx_current_timespec(timespec)
-#define get_localtime(time) localtime(time)
-#elif defined(mingw_PLATFORM) && !defined(HPE_mingw_BUILD)
-int get_timer_info(struct timer_info *ti);
 #define _get_current_timespec(timespec) get_win32_current_timespec(timespec)
 #define get_localtime(time) get_win32_localtime(time)
 #define get_gmtime(time) get_win32_gmtime(time)
-#elif defined(HPE_mingw_BUILD)
-#define _get_current_timespec(timespec) get_win32_current_timespec(timespec)
-#define get_localtime(time) get_win32_localtime(time)
-#define get_gmtime(time) get_win32_gmtime(time)
-#else
-int get_unix_current_timespec(struct ltfs_timespec* now);
-struct tm *get_unix_localtime(const ltfs_time_t *timep);
-#define _get_current_timespec(timespec) get_unix_current_timespec(timespec)
-#define get_localtime(time) get_unix_localtime(time);
-#endif
 
 static inline int normalize_ltfs_time(struct ltfs_timespec* t)
 {
@@ -150,32 +122,11 @@ static inline int get_current_timespec(struct ltfs_timespec* now)
 /*
  *  Time stamp functions
  */
-#ifdef __APPLE__
-typedef uint64_t _time_stamp_t;
-
-extern void __get_time(_time_stamp_t* t);
-extern int get_timer_info(struct timer_info *ti);
-
-inline static uint64_t get_time_stamp(_time_stamp_t* start)
-{
-	_time_stamp_t now;
-
-	__get_time(&now);
-
-	return (uint64_t)(now - *start);
-}
-
-#elif defined(mingw_PLATFORM) && !defined(HPE_mingw_BUILD)
-#else /* Linux */ /* Or if defined HPE_mingw_BUILD */
 typedef struct timespec _time_stamp_t;
 
 inline static void __get_time(_time_stamp_t* t)
 {
-#ifdef HPE_mingw_BUILD
 	get_win32_current_timespec((struct ltfs_timespec *) t);
-#else
-	clock_gettime(CLOCK_MONOTONIC, t);
-#endif /* HPE_mingw_BUILD */
 }
 
 inline static int get_timer_info(struct timer_info *ti)
@@ -208,6 +159,5 @@ inline static uint64_t get_time_stamp(_time_stamp_t* start)
 	return ret;
 }
 
-#endif
 
 #endif /* time_internal_h_ */

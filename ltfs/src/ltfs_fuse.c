@@ -68,9 +68,7 @@
  * field of the fuse_operations being turned into ftruncate64,
  * which leads to a compiler error
 */
-#ifdef HPE_mingw_BUILD
 #define _FILE_OFFSET_BITS_SET_FTRUNCATE 1
-#endif /* HPE_mingw_BUILD */
 
 #include "ltfs_fuse.h"
 #include "libltfs/ltfs_fsops.h"
@@ -82,14 +80,10 @@
 #include "libltfs/arch/errormap.h"
 #include "libltfs/kmi.h"
 
-#ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
 #include "libltfs/ltfs_internal.h"
-#endif
 
-#ifdef HPE_mingw_BUILD
 #include <ctype.h>
-#endif
 
 #if (__WORDSIZE == 64)
 #define FILEHANDLE_TO_STRUCT(fh) ((struct ltfs_file_handle *)(uint64_t)(fh))
@@ -106,12 +100,6 @@
  * a callable function 
  *  
  */
-#ifdef mingw_PLATFORM
-#ifndef HPE_mingw_BUILD
-static struct fuse_context *context;
-#define fuse_get_context() context
-#endif /* HPE_mingw_BUILD */
-#endif /* mingw_PLATFORM */
 #define FUSE_REQ_ENTER(r)   REQ_NUMBER(REQ_STAT_ENTER, REQ_FUSE, r)
 #define FUSE_REQ_EXIT(r)    REQ_NUMBER(REQ_STAT_EXIT,  REQ_FUSE, r)
 
@@ -230,17 +218,6 @@ static void _file_close(struct file_info *fi, struct ltfs_fuse_data *priv)
 		fi->open_count--;
 		if (fi->open_count == 0) {
 			
-#ifndef HPE_mingw_BUILD			
-			// HPE MD 12.10.2017 Added to support SNIA 2.4 section 9.2.8 openforwrite
-			// Non windows OS close files here and so openforwrite flag needs to be cleared.
-			if (!((struct dentry *)(fi->dentry_handle))->isdir)
-			{
-				acquirewrite_mrsw(&((struct dentry *)(fi->dentry_handle))->meta_lock);
-				((struct dentry *)(fi->dentry_handle))->openforwrite = false;
-				releasewrite_mrsw(&((struct dentry *)(fi->dentry_handle))->meta_lock);
-			}
-	
-#endif
 	 	
 			HASH_DEL(priv->file_table, fi);
 			do_free = true;
@@ -266,7 +243,7 @@ static void _ltfs_fuse_attr_to_stat(struct fuse_stat *stbuf, struct dentry_attr 
 	struct ltfs_fuse_data *priv)
 {
 	memset(stbuf, 0, sizeof(*stbuf));
-#if defined(_WIN32) && defined(FSP_FUSE_USE_STAT_EX)
+#ifdef FSP_FUSE_USE_STAT_EX
 	/* Report tape files with the Archive attribute (visual identity for
 	 * archival media; also mirrors the read-only flag as an attribute). */
 	if (! attr->isdir) {
@@ -278,11 +255,7 @@ static void _ltfs_fuse_attr_to_stat(struct fuse_stat *stbuf, struct dentry_attr 
 	stbuf->st_dev = LTFS_SUPER_MAGIC;
 	stbuf->st_ino = attr->uid;
 	if (attr->isslink) {
-#ifndef HPE_mingw_BUILD
-		stbuf->st_mode = S_IFLNK | 0777;
-#else
 		stbuf->st_mode = 0777;
-#endif /* HPE_mingw_BUILD */
 	} else {
 		stbuf->st_mode = ((attr->isdir ? S_IFDIR : S_IFREG) | (attr->readonly ? 0555 : 0777)) &
 			(attr->isdir ? priv->dir_mode : priv->file_mode);
@@ -300,12 +273,6 @@ static void _ltfs_fuse_attr_to_stat(struct fuse_stat *stbuf, struct dentry_attr 
 	stbuf->st_blksize = attr->blocksize;
 	stbuf->st_blocks = (attr->alloc_size + 511) / 512; /* this field is in 512-byte units */
 
-#ifdef __APPLE__
-	stbuf->st_atimespec = timespec_from_ltfs_timespec(&attr->access_time);
-	stbuf->st_mtimespec = timespec_from_ltfs_timespec(&attr->modify_time);
-	stbuf->st_ctimespec = timespec_from_ltfs_timespec(&attr->change_time);
-	stbuf->st_birthtimespec = timespec_from_ltfs_timespec(&attr->create_time);
-#else
 	/* Field-wise conversion: WinFsp's fuse_timespec has a 64-bit tv_nsec,
 	 * the platform timespec may not — the layouts are not cast-compatible. */
 	stbuf->st_atim.tv_sec  = attr->access_time.tv_sec;
@@ -314,12 +281,9 @@ static void _ltfs_fuse_attr_to_stat(struct fuse_stat *stbuf, struct dentry_attr 
 	stbuf->st_mtim.tv_nsec = attr->modify_time.tv_nsec;
 	stbuf->st_ctim.tv_sec  = attr->change_time.tv_sec;
 	stbuf->st_ctim.tv_nsec = attr->change_time.tv_nsec;
-#if defined(_WIN32)
 	/* WinFsp reports st_birthtim as the Windows creation time */
 	stbuf->st_birthtim.tv_sec  = attr->create_time.tv_sec;
 	stbuf->st_birthtim.tv_nsec = attr->create_time.tv_nsec;
-#endif
-#endif
 }
 
 int ltfs_fuse_fgetattr(const char *path, struct fuse_stat *stbuf, struct fuse_file_info *fi)
@@ -390,7 +354,6 @@ int ltfs_fuse_statfs(const char *path, struct fuse_statvfs *buf)
 	 *
 	 * We support the statvfs structure in our MinGW environmnet
 	 */
-#if !defined(mingw_PLATFORM) || defined(HPE_mingw_BUILD)
 	int ret = 0;
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	struct fuse_statvfs *stats = &priv->fs_stats;
@@ -418,20 +381,11 @@ int ltfs_fuse_statfs(const char *path, struct fuse_statvfs *buf)
 	stats->f_ffree = UINT32_MAX - stats->f_files;   /* Assuming file count fits in 32 bits. */
 	*buf = *stats;
 
-#ifdef __APPLE__
-	/* With MacFUSE, we use an f_frsize not equal to the file system block size.
-	 * Need to adjust the block counts so they're in units of the reported f_frsize. */
-	double scale = ltfs_get_blocksize(priv->data) / (double)stats->f_frsize;
-	buf->f_blocks *= scale;
-	buf->f_bfree  *= scale;
-	buf->f_bavail *= scale;
-#endif /* __APPLE__ */
 
 #if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_STATFS), 0, 0);
 #endif /* 0 */
 
-#endif /* !defined(mingw_PLATFORM) || defined(HPE_mingw_BUILD) */
 
 	return errormap_fuse_error(ret);;
 }
@@ -482,15 +436,6 @@ int ltfs_fuse_open(const char *path, struct fuse_file_info *fi)
 
 	fi->fh = STRUCT_TO_FILEHANDLE(file);
 
-#ifdef __APPLE__
-    /* Comment from MacFUSE author about direct_io on OSX:
-     * direct_io is a rather abnormal mode of operation from Mac OS X's
-     * standpoint. Unless your file system requires this mode, I wouldn't
-     * recommend using this option.
-     */
-    fi->direct_io  = 0;
-    fi->keep_cache = 0;
-#else
 #if FUSE_VERSION <= 27
 	/* for FUSE <= 2.7, set direct_io when opening for write */
 	if (((fi->flags & O_WRONLY) == O_WRONLY) || ((fi->flags & O_RDWR) == O_RDWR))
@@ -501,7 +446,6 @@ int ltfs_fuse_open(const char *path, struct fuse_file_info *fi)
 	 * set it on newer FUSE versions, where we don't use direct_io. */
 	fi->direct_io = 0;
 	fi->keep_cache = 1;
-#endif
 #endif
 	
 #if 0
@@ -689,7 +633,6 @@ int ltfs_fuse_fsync(const char *path, int isdatasync, struct fuse_file_info *fi)
     //uid = ((struct dentry *)(file->file_info->dentry_handle))->uid;
 	ret = _ltfs_fuse_do_flush(file, priv, __FUNCTION__);
 
-#ifdef HPE_mingw_BUILD
 
 	// HPE MD 12.10.2017 Added to support SNIA 2.4 section 9.2.8 openforwrite
 	// Windows OS finish flushing files here and so openforwrite flag needs to be cleared.
@@ -703,7 +646,6 @@ int ltfs_fuse_fsync(const char *path, int isdatasync, struct fuse_file_info *fi)
 		releasewrite_mrsw(&((struct dentry *)(file->file_info->dentry_handle))->meta_lock);
 	}
 
-#endif
 
 #if 0
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_FSYNC), ret, uid);
@@ -753,13 +695,11 @@ int ltfs_fuse_utimens(const char *path, const struct fuse_timespec ts[2])
 	tsTmp[1].tv_sec  = ts[1].tv_sec;
 	tsTmp[1].tv_nsec = (long)ts[1].tv_nsec;
 
-#ifdef HPE_mingw_BUILD
 	if (tsTmp[0].tv_sec == 0 && tsTmp[0].tv_nsec == 0
 			&& tsTmp[1].tv_sec == 0 && tsTmp[1].tv_nsec == 0) {
 		ltfsmsg(LTFS_WARN, "14117W");
 		return errormap_fuse_error(ret);
 	}
-#endif /* HPE_mingw_BUILD */
 
 	ltfsmsg(LTFS_DEBUG, "14038D", path);
 	ret = ltfs_fsops_utimens_path(path, tsTmp, &id, priv->data);
@@ -863,15 +803,6 @@ int ltfs_fuse_create(const char *path, fuse_mode_t mode, struct fuse_file_info *
 
 	fi->fh = STRUCT_TO_FILEHANDLE(file);
 
-#ifdef __APPLE__
-    /* Comment from MacFUSE author about direct_io on OSX:
-     * direct_io is a rather abnormal mode of operation from Mac OS X's
-     * standpoint. Unless your file system requires this mode, I wouldn't
-     * recommend using this option.
-     */
-    fi->direct_io  = 0;
-    fi->keep_cache = 0;
-#else
 #if FUSE_VERSION <= 27
 	/* for FUSE <= 2.7, set direct_io when creating */
 	fi->direct_io = 1;
@@ -881,7 +812,6 @@ int ltfs_fuse_create(const char *path, fuse_mode_t mode, struct fuse_file_info *
 	 * set it on newer FUSE versions, where we don't use direct_io. */
 	fi->direct_io = 0;
 	fi->keep_cache = 1;
-#endif
 #endif
 
 #if 0
@@ -1041,22 +971,7 @@ int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
 		return ret;
 	}
 
-#ifdef __APPLE__
-	if (new_name)
-		free(new_name); new_name = NULL;
-
-	ret = pathname_nfd_normaize(name, &new_name);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "14027E", "nfd", ret);
-		if (new_name)
-			free(new_name); new_name = NULL;
-		return ret;
-	}
-
-	ret = filler(buf, new_name, NULL, 0);
-#else
 	ret = filler(buf, name, NULL, 0);
-#endif
 
 	if (new_name)
 		free(new_name); new_name = NULL;
@@ -1168,13 +1083,8 @@ int ltfs_fuse_read(const char *path, char *buf, size_t size, fuse_off_t offset, 
 	return errormap_fuse_error(ret);
 }
 
-#ifdef __APPLE__
-int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, size_t size,
-	int flags, uint32_t position)
-#else
 int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, size_t size,
 	int flags)
-#endif /* __APPLE__ */
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	ltfs_file_id id;
@@ -1190,16 +1100,6 @@ int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, si
 	 * on OS X, and we have no resource forks
 	 * TODO: is it correct to behave this way?
 	 */
-#ifdef __APPLE__
-	if (position) {
-		/* Position argument must be zero */
-		ltfsmsg(LTFS_ERR, "14023E");
-#if 0
-		ltfs_request_trace(FUSE_REQ_EXIT(REQ_SETXATTR), -EINVAL, 0);
-#endif /* 0 */
-		return errormap_fuse_error(-LTFS_NULL_ARG);
-	}
-#endif /* __APPLE__ */
 
 	ret = ltfs_fsops_setxattr(path, name, value, size, flags, &id, priv->data);
 
@@ -1210,12 +1110,7 @@ int ltfs_fuse_setxattr(const char *path, const char *name, const char *value, si
 	return errormap_fuse_error(ret);
 }
 
-#ifdef __APPLE__
-int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t size,
-	uint32_t position)
-#else
 int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t size)
-#endif /* __APPLE__ */
 {
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	ltfs_file_id id;
@@ -1231,17 +1126,6 @@ int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t s
 	 * on OS X, and we have no resource forks
 	 * TODO: is it correct to behave this way?
 	 */
-#ifdef __APPLE__
-	if (position) {
-		/* Position argument must be zero */
-		ltfsmsg(LTFS_ERR, "14024E");
-#if 0
-		ltfs_request_trace(FUSE_REQ_EXIT(REQ_GETXATTR), -EINVAL, 0);
-#endif /* 0 */
-
-		return errormap_fuse_error(-LTFS_NULL_ARG);
-	}
-#else
 	/* Short-circuit requests for system EAs to avoid mounting the same unnecessarily in
 	 * library mode. */
 	if (strstr(name, "system.") == name || strstr(name, "security.") == name) {
@@ -1250,7 +1134,6 @@ int ltfs_fuse_getxattr(const char *path, const char *name, char *value, size_t s
 #endif /* 0 */
 		return errormap_fuse_error(-LTFS_NO_XATTR);
 	}
-#endif /* __APPLE__ */
 
 	ret = ltfs_fsops_getxattr(path, name, value, size, &id, priv->data);
 
@@ -1273,14 +1156,12 @@ int ltfs_fuse_listxattr(const char *path, char *list, size_t size)
 
 	ltfsmsg(LTFS_DEBUG, "14052D", path);
 
-#ifdef mingw_PLATFORM
 	/* Revalidate the mounted medium before publishing its root metadata. */
 	if (!strcmp(path, "/")) {
 		ret = ltfs_test_unit_ready(priv->data);
 		if (ret < 0)
 			return errormap_fuse_error(ret);
 	}
-#endif
 
 	ret = ltfs_fsops_listxattr(path, list, size, &id, priv->data);
 
@@ -1312,7 +1193,6 @@ int ltfs_fuse_removexattr(const char *path, const char *name)
 	return errormap_fuse_error(ret);
 }
 
-#ifdef HPE_mingw_BUILD
 /*
  * Update the Explorer label + icon for this mount's drive letter through the
  * registry DriveIcons override. A mounted cartridge shows its own LTFS volume
@@ -1335,7 +1215,6 @@ static void ltfs_update_drive_label(struct ltfs_fuse_data *priv, enum drive_stat
 	}
 	free(name);
 }
-#endif /* HPE_mingw_BUILD */
 
 /**
  * Mount the filesystem. This function assumes a volume has been
@@ -1346,10 +1225,8 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	int						ret = 0;
 	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
 	struct fuse_statvfs *stats = &priv->fs_stats;
-#ifdef HPE_mingw_BUILD
 	int						iter = 0;
 	char					*index_rules_utf8 = NULL;
-#endif /* HPE_mingw_BUILD */
 
 #if 0
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_MOUNT), 0, 0);
@@ -1361,7 +1238,6 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	conn->want |= conn->capable & FSP_FUSE_CAP_STAT_EX;
 #endif
 
-#ifdef HPE_mingw_BUILD
 
 	/* Capture the mount drive letter (for the Explorer DriveIcons override) from
 	 * the argv the mountpoint was given as: "T", "T:", or the mount-manager form
@@ -1629,18 +1505,6 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 		iter++;
 	}
 
-#else
-	if (priv->pid_orig != getpid()) {
-		/*
-		 * Reopen device when LTFS was forked in fuse_main().
-		 * Backend must handle reopen correctly if it sis needed.
-		 * For example, iokit backend must handle reopen. But ibmtape backend
-		 * doesn't need handle reopen because file descriptor is took over to a child
-		 * process.
-		 */
-		ltfs_device_reopen(priv->devname, priv->data);
-	}
-#endif /* HPE_mingw_BUILD */
 
 
 	/* Suppress unused variable warning. */
@@ -1651,7 +1515,6 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	 * iosched_initialized() so should have a defined default value */
 	priv->data->iosched_handle = NULL;
 
-#if !defined(mingw_PLATFORM) || defined(HPE_mingw_BUILD)
 	/*
 	 * Open the I/O scheduler, if one has been specified by the user.
 	 * Please note that when we run in library mode the I/O scheduler
@@ -1677,38 +1540,11 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	 * thus we need the block size here
 	 *
 	 */
-#ifdef HPE_mingw_BUILD
 	stats->f_bsize = priv->data->label->blocksize;
-#endif
 
 	/* Filesystem fragment size. Linux allows any f_frsize, whereas OS X (with MacFUSE) expects
 	 * a power of 2 between 512 and 131072. */
-#ifdef __APPLE__
-	int nshift;
-
-	if (stats->f_bsize > 131072)
-		stats->f_frsize = 131072;
-	else if (stats->f_bsize < 512)
-		stats->f_frsize = 512;
-	else {
-		nshift = 0;
-		stats->f_frsize = stats->f_bsize;
-		while (stats->f_frsize != 1) {
-			stats->f_frsize >>= 1;
-			++nshift;
-		}
-		stats->f_frsize = 1 << nshift;
-		if (stats->f_frsize < stats->f_bsize)
-			stats->f_frsize <<= 1;
-	}
-
-	/* Having f_bsize different from f_frsize should technically be okay, but it
-	 * seems that many (most?) programs don't understand the difference. So the only
-	 * way to get consistent space usage results is to make them the same. */
-	stats->f_bsize = stats->f_frsize;
-#else
 	stats->f_frsize = stats->f_bsize;
-#endif /* __APPLE__ */
 
 	stats->f_favail = 0;                               /* Ignored by FUSE */
 	stats->f_flag = 0;                                 /* Ignored by FUSE */
@@ -1716,7 +1552,6 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	stats->f_namemax = LTFS_FILENAME_MAX;
 
 	ltfsmsg(LTFS_INFO, "14029I");
-#endif /* !defined(mingw_PLATFORM) || defined(HPE_mingw_BUILD) */
 
 	/* Kick timer thread for sync by time */
 	if (priv->sync_type == LTFS_SYNC_TIME)
@@ -1731,10 +1566,8 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_MOUNT), (uint64_t)priv, 0);
 #endif /* 0 */
 
-#ifdef HPE_mingw_BUILD
 	/* Cartridge mounted: show its volume name and the mounted icon in Explorer. */
 	ltfs_update_drive_label(priv, DPRES_MOUNTED);
-#endif
 
 	return priv;
 }
@@ -1751,10 +1584,8 @@ void ltfs_fuse_umount(void *userdata)
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_UNMOUNT), 0, 0);
 #endif /* 0 */
 
-#ifdef HPE_mingw_BUILD
 	/* Drop the Explorer label/icon override as the drive letter goes away. */
 	clear_drive_presentation(priv->drive_letter);
-#endif
 
 	if (periodic_sync_thread_initialized(priv->data))
 		periodic_sync_thread_destroy(priv->data);
@@ -1790,7 +1621,6 @@ void ltfs_fuse_umount(void *userdata)
 	 * point instead of doing it in main()
 	 *
 	 */
-#ifdef HPE_mingw_BUILD
 	if (priv->eject)
 		ltfs_eject_tape(priv->data);
 	ltfs_device_close(priv->data);
@@ -1800,7 +1630,6 @@ void ltfs_fuse_umount(void *userdata)
 	 * index was getting overwritten. 
 	 */
 	ltfs_volume_free(& priv->data);
-#endif
 }
 
 int ltfs_fuse_symlink(const char* to, const char* from)
@@ -1841,7 +1670,6 @@ int ltfs_fuse_readlink(const char* path, char* buf, size_t size)
 	return errormap_fuse_error(ret);
 }
 
-#ifdef mingw_PLATFORM
 /* Read-only WinFsp control interface.
  * Fixed output-only commands for named attributes, plus a bounded MAM reader.
  * No arbitrary xattr names, setters, or filesystem mutations are accepted.
@@ -2016,12 +1844,9 @@ static int ltfs_fuse_ioctl(const char *path, int cmd, void *arg,
         return mam_ioctl_query(priv->data, path, flags, data);
     return attr_ioctl_query(priv->data, path, (unsigned int)cmd, flags, data);
 }
-#endif
 
 struct fuse_operations ltfs_ops = {
-#ifdef mingw_PLATFORM
 	.ioctl       = ltfs_fuse_ioctl,
-#endif
 	.init        = ltfs_fuse_mount,
 	.destroy     = ltfs_fuse_umount,
 	.getattr     = ltfs_fuse_getattr,

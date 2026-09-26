@@ -49,11 +49,6 @@
 #ifndef __LTFSSNMP_H__
 #define __LTFSSNMP_H__
 
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
-#include <net-snmp/net-snmp-config.h>
-#include <net-snmp/net-snmp-includes.h>
-#include <net-snmp/agent/net-snmp-agent-includes.h>
-#endif /* ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM))) */
 
 #include <stdbool.h>
 #include <errno.h>

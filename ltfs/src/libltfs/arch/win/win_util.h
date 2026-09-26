@@ -68,12 +68,9 @@ extern "C" {
  */
 
 #include <sys/types.h> /* Used in struct stat definition */
-#ifndef HPE_mingw_BUILD
-#include <sys/stat.h>
-#endif /* HPE_mingw_BUILD */
 #include <unistd.h>    /* Definitions of uid_t and gid_t */
 /* Modern MinGW-w64 no longer defines uid_t/gid_t anywhere */
-#if defined(__MINGW32__) && !defined(__UID_T_TYPE_DEFINED)
+#ifndef __UID_T_TYPE_DEFINED
 #define __UID_T_TYPE_DEFINED
 typedef unsigned int uid_t;
 typedef unsigned int gid_t;
@@ -83,9 +80,7 @@ typedef unsigned int gid_t;
 #include <windows.h>
 #include <ws2tcpip.h>
 #include <errno.h>
-#if defined(HPE_mingw_BUILD)
 #include <dirent.h>
-#endif
 #include <direct.h>    /* _mkdir() */
 #include <sys/locking.h>
 
@@ -201,17 +196,6 @@ const char* dlerror(void);
  * need all of this
  *
  */
-#ifndef HPE_mingw_BUILD
-/* FUSE compatibility */
-#undef fuse_opt_add_arg
-#undef fuse_opt_free_args
-#undef fuse_opt_parse
-#undef fuse_main
-#define fuse_opt_add_arg(a, b)     win_ltfs_dummy()
-#define fuse_opt_free_args(a)      win_ltfs_dummy()
-#define fuse_opt_parse(a, b, c, d) win_ltfs_dummy()
-#define fuse_main(a, b, c, d)      win_ltfs_dummy()
-#endif /* HPE_mingw_BUILD */
 
 #if defined(LTFS_MINGW_W64) || defined(LTFS_MINGW_W32)
 #ifndef HAVE_STRUCT_TIMESPEC
@@ -227,9 +211,7 @@ const char* dlerror(void);
  * __WORDSIZE for 64bit builds
  *
  */
-#ifdef HPE_mingw_BUILD
 #define __WORDSIZE 64
-#endif /* HPE_mingw_BUILD */
 #endif /* _WIN64 */
 
 /* Date/Time compatibility*/
@@ -327,7 +309,6 @@ struct stat_libltfs
  * In our MinGW environment we always use a 64bit stat structure
  *
  */
-#if defined(_WIN64) || defined(HPE_mingw_BUILD)
 struct _stat64i32 {
 	_dev_t st_dev;
 	_ino_t st_ino;
@@ -367,9 +348,6 @@ struct _stat64 {
 	blksize_t st_blksize;
 	blkcnt_t  st_blocks;
 };
-#else
-#undef _STAT_DEFINED
-#endif /* defined(_WIN64) || defined(HPE_mingw_BUILD) */
 #endif /* _STAT_DEFINED */
 
 int stat_libltfs(const char *_Filename,struct stat_libltfs *_Stat);
@@ -381,38 +359,7 @@ struct tm *gmtime_libltfs(const time_t *timep, struct tm *result);
  * but fuse.h requires _FILE_OFFSET_BITS set to 64.
  */
 #define _FILE_OFFSET_BITS 64
-#ifndef HPE_mingw_BUILD
-#ifndef WIN_UTIL_C
-#define _stat _stat_libltfs
-#define stat stat_libltfs
-#define fstat fstat_libltfs
-#define wstat wstat_libltfs
-#define _off_t off64_t
-#define off_t off64_t
-#endif /* WIN_UTIL_C */
-#endif /* HPE_mingw_BUILD */
 
-#ifndef HPE_mingw_BUILD
-/* We move this structure definition into our statvfs.h to
-   share with the FUSE headers */
-struct statvfs
-{
-	blksize_t st_blksize;
-	blkcnt_t  st_blocks;
-	unsigned long f_fsid;
-	unsigned long f_namemax;
-	unsigned long f_bsize;
-	unsigned long f_frsize;
-	unsigned long f_blocks;
-	unsigned long f_bfree;
-	unsigned long f_favail;
-	unsigned long f_bavail;
-	/*unsigned long f_bfree;*/
-	unsigned long f_files;
-	unsigned long f_ffree;
-	unsigned long f_flag;
-};
-#endif /* HPE_mingw_BUILD */
 
 /* Misc utilities */
 //#define strcasestr(s1, s2) strstr((s1), (s2))  // Need to change!!
@@ -435,7 +382,7 @@ typedef void(*sighandler_t)(int);
  * Pick a more Windows friendly location for the config file
  *
  */
-#if defined(HPE_mingw_BUILD) && defined(LTFS_CONFIG_FILE)
+#ifdef LTFS_CONFIG_FILE
 #undef LTFS_CONFIG_FILE
 #define LTFS_CONFIG_FILE "C:/ProgramData/WinLtfs/ltfs.conf"
 #endif
@@ -462,7 +409,7 @@ char *strcasestr( const char* searchstr, const char* fromstr);
  *
  */
 struct tm *gmtime_libltfs(const time_t *timep, struct tm *result);
-#if defined(HPE_mingw_BUILD) && !defined(strtok_r)
+#ifndef strtok_r
 char *strtok_r(char *str, const char *delim, char **saveptr);
 #endif /* defined(HPE_mingw_BUILD) && !defined(strtok_r) */
 
@@ -493,12 +440,10 @@ const char *drive_state_label(enum drive_state state);
 void set_drive_presentation(const char *letter, const char *label, enum drive_state state);
 void clear_drive_presentation(const char *letter);
 
-#if defined(HPE_mingw_BUILD)
 int scandir(const char *dirp, 
             struct dirent ***namelist,
             int (*filter)(const struct dirent *entry),
             int (*compare)(const void* p1, const void* p2));
-#endif /* defined(HPE_mingw_BUILD) */
 
 HANDLE shmget(int key, size_t size, int flag);
 void *shmat(HANDLE handle, void* addr, int flag);

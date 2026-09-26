@@ -44,24 +44,12 @@
  *************************************************************************************
  */
 
-#ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#endif
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
-#ifndef mingw_PLATFORM
-#include <syslog.h>
-#endif
 
-#ifdef __APPLE__
-#include <ICU/unicode/ucnv.h>
-#include <ICU/unicode/ures.h>
-#include <ICU/unicode/utypes.h>
-#include <ICU/unicode/udata.h>
-#include <ICU/unicode/uclean.h>
-#else
 
 /* 
  * OSR
@@ -71,33 +59,21 @@
  * defined. Strange, yes, but true 
  *  
  */
-#if defined(HPE_mingw_BUILD) && defined(__MINGW32__)
 
 #undef __MINGW32__
 #include <unicode/ucnv.h>
 #include <unicode/ures.h>
 #include <unicode/utypes.h>
 #define __MINGW32__
-#else 
-#include <unicode/ucnv.h>
-#include <unicode/ures.h>
-#include <unicode/utypes.h>
-#endif /* #if defined(HPE_mingw_BUILD) && defined(__MINGW32__) */
 #include <unicode/udata.h>
 #include <unicode/putil.h>
 #include <unicode/uclean.h>
 
-#endif
-#ifdef mingw_PLATFORM
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include "arch/win/winlog.h"
-#else
-#include <dlfcn.h>
-#include <sys/types.h>
-#endif
 
 #include "libltfs/ltfslogging.h"
 #include "libltfs/ltfs_thread.h"
@@ -136,7 +112,6 @@ static int syslog_levels[] = {
 	LOG_DEBUG,    /* LTFS_TRACE  */
 };
 
-#ifdef mingw_PLATFORM
 /* 
  * OSR
  * 
@@ -145,22 +120,11 @@ static int syslog_levels[] = {
  * be bin_libltfs to avoid collision 
  *  
  */
-#ifdef HPE_mingw_BUILD
 extern char bin_libltfs_dat[];
 extern char internal_error_dat[];
 #define libltfs_dat bin_libltfs_dat
 #define LIBLTFS_BUNDLE_NAME "bin_libltfs"
 #define INTERNALERRROR_BUNDLE_NAME "internal_error"
-#else
-char *libltfs_dat;
-char *internal_error_dat;
-#endif /* HPE_mingw_BUILD */
-#else
-U_CFUNC char libltfs_dat[]; /* U_CFUNC is an ICU synonym for extern. */
-U_CFUNC char internal_error_dat[]; /* U_CFUNC is an ICU synonym for extern. */
-#define LIBLTFS_BUNDLE_NAME "libltfs"
-#define INTERNALERRROR_BUNDLE_NAME "internal_error"
-#endif /* mingw_PLATFORM */
 
 static bool libltfs_dat_init = false;
 int ltfs_log_level = LTFS_INFO;
@@ -179,11 +143,6 @@ static char msg_buf[OUTPUT_BUF_SIZE * 2];
 static UConverter *output_conv = NULL;
 
 /* This function does not exist in our code base */
-#ifndef HPE_mingw_BUILD
-#ifdef mingw_PLATFORM
-static int _open_message_file(char *bundle_name, void **bundle_data);
-#endif
-#endif
 
 int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 {
@@ -197,12 +156,8 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 		fprintf(stderr, "LTFS10002E Could not initialize mutex (%d)\n", ret);
 		return -ret;
 	}
-#ifndef HPE_mingw_BUILD
-	output_conv = ucnv_open(NULL, &err);
-#else
 	/* We always use the UTF-8 converter */
 	output_conv = ucnv_open("UTF-8", &err);
-#endif
 	if (U_FAILURE(err)) {
 		fprintf(stderr, "LTFS9008E Could not open output converter (ucnv_open: %d)\n", err);
 		output_conv = NULL;
@@ -213,7 +168,6 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
 	/* Initialize output lock and plugin list */
 	TAILQ_INIT(&plugin_bundles);
 
-#ifdef mingw_PLATFORM
 /* 
  * OSR
  * 
@@ -221,10 +175,6 @@ int ltfsprintf_init(int log_level, bool use_syslog, bool print_thread_id)
  * data, thus we do not use this call
  *  
  */
-#ifndef HPE_mingw_BUILD
-	u_setDataDirectory(LTFS_RB_DIR);
-#endif
-#endif
 
 	/* Load the libltfs message bundle and the primary message set */
 	ret = ltfsprintf_load_plugin(LIBLTFS_BUNDLE_NAME, libltfs_dat, (void **)&pl);
@@ -280,7 +230,6 @@ void ltfsprintf_finish()
 		output_conv = NULL;
 	}
 
-#ifdef mingw_PLATFORM
 /* 
  * OSR
  * 
@@ -288,10 +237,6 @@ void ltfsprintf_finish()
  * data, thus nothing to free here
  *  
  */
-#ifndef HPE_mingw_BUILD
-	free(libltfs_dat);
-#endif
-#endif
 
 	ltfs_mutex_destroy(&output_lock);
 	u_cleanup();
@@ -331,7 +276,6 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
  * data, thus we need this call
  *  
  */
-#if !defined(mingw_PLATFORM) || defined(HPE_mingw_BUILD)
 	udata_setAppData(bundle_name, bundle_data, &err);
 	if (U_FAILURE(err)) {
 		if (libltfs_dat_init)
@@ -340,7 +284,6 @@ int ltfsprintf_load_plugin(const char *bundle_name, void *bundle_data, void **me
 			fprintf(stderr, "LTFS11287E Cannot load messages: failed to register message data (%d)\n", err);
 		return -1;
 	}
-#endif
 
 	pl = calloc(1, sizeof(struct plugin_bundle));
 	if (! pl) {
@@ -506,27 +449,9 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *id, .
 		goto internal_error;
 	}
 
-#ifdef mingw_PLATFORM
 	va_start(argp, id);
 	vsyslog(level, output_buf, argp);
 	va_end(argp);
-#else
-	va_start(argp, id);
-	vfprintf(stderr, output_buf, argp);
-	va_end(argp);
-	fprintf(stderr, "\n");
-
-	if (level <= ltfs_syslog_level && ltfs_use_syslog) {
-		va_start(argp, id);
-		if (level <= LTFS_ERR)
-			vsyslog(syslog_levels[LTFS_ERR], output_buf, argp);
-		else if (level >= LTFS_TRACE)
-			vsyslog(syslog_levels[LTFS_TRACE], output_buf, argp);
-		else
-			vsyslog(syslog_levels[level], output_buf, argp);
-		va_end(argp);
-	}
-#endif
 
 	if (msg_out) {
 		va_start(argp, id);
@@ -535,35 +460,6 @@ int ltfsmsg_internal(bool print_id, int level, char **msg_out, const char *id, .
 		*msg_out = strdup(msg_buf);
 	}
 
-#if ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM)))
-#if 0
-	if (is_snmp_enabled()) {
-#if 0 // SNMP Error Trap
-		if (level <= LTFS_ERR) {
-			/* Send a trap of Error (id and pos+1) */
-			char *pos;
-			va_start(argp, id);
-			vsprintf(msg_buf, output_buf, argp);
-			va_end(argp);
-			pos = strstr(msg_buf, " ");
-			send_ltfsErrorTrap(pos+1);
-		} else  {
-#endif
-			if (is_snmp_trapid(id) == true) {
-				/* Send a trap of Info (id and pos+1) */
-				char *pos;
-				va_start(argp, id);
-				vsprintf(msg_buf, output_buf, argp);
-				va_end(argp);
-				pos = strstr(msg_buf, " ");
-				send_ltfsInfoTrap(pos+1);
-			}
-#if 0 // SNMP Error Trap
-		}
-#endif
-	}
-#endif /* 0 */
-#endif /* ((!defined (__APPLE__)) && (!defined (mingw_PLATFORM))) */
 
 	ltfs_mutex_unlock(&output_lock);
 

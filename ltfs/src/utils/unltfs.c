@@ -17,9 +17,7 @@
  ************************************************************************************* 
  */
 
-#ifdef HPE_mingw_BUILD
 #include "libltfs/arch/win/win_util.h"
-#endif
  
 #include <getopt.h>
 #include "../libltfs/ltfs.h"
@@ -27,9 +25,6 @@
 #include "../libltfs/plugin.h"
 #include "../libltfs/tape.h"
 
-#ifdef __APPLE__
-#include "libltfs/arch/osx/osx_string.h"
-#endif
 
 /* 
  * OSR
@@ -38,11 +33,7 @@
  * data. 
  *  
  */
-#if defined(mingw_PLATFORM) && !defined(HPE_mingw_BUILD)
-char *bin_mkltfs_dat;
-#else
 extern char bin_mkltfs_dat[];
-#endif
 
 struct other_format_opts {
     struct config_file *config; /* Configuration data read from the global LTFS config file */
@@ -117,22 +108,8 @@ int main(int argc, char **argv)
 	const char *config_file = NULL;
 	void *message_handle;
 
-#ifdef HPE_mingw_BUILD
 	(void) lang;
-#endif /* HPE_mingw_BUILD */
 
-#ifndef HPE_mingw_BUILD
-	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
-	lang = getenv("LANG");
-	if (! lang) {
-		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting unltfs.\n");
-		ret = setenv("LANG", "en_US.UTF-8", 1);
-		if (ret) {
-			fprintf(stderr, "LTFS9016E Cannot set the LANG environment variable\n");
-			return 1;
-		}
-	}
-#endif /* HPE_mingw_BUILD */
 
 	/* Start up libltfs with the default logging level. */
 	ret = ltfs_init(LTFS_INFO, true, false);

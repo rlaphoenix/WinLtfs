@@ -61,11 +61,7 @@
 ************************************************************************************* 
 */
 
-#ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
-#else
-#include <syslog.h>
-#endif /* mingw_PLATFORM */
 
 #include <getopt.h>
 #include "libltfs/ltfs_fuse_version.h"
@@ -82,9 +78,6 @@
 volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
-#ifdef __APPLE__
-#include "libltfs/arch/osx/osx_string.h"
-#endif
 
 #define INDEX_PART_ID 'a'
 #define DATA_PART_ID 'b'
@@ -98,11 +91,7 @@ volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGH
  * data. 
  *  
  */
-#if defined(mingw_PLATFORM) && !defined(HPE_mingw_BUILD)
-char *bin_mkltfs_dat;
-#else
 extern char bin_mkltfs_dat[];
-#endif
 
 struct other_format_opts {
 	struct config_file *config; /**< Configuration data read from the global LTFS config file */
@@ -242,27 +231,10 @@ int main(int argc, char **argv)
 	}
 	struct fuse_args args = FUSE_ARGS_INIT(fuse_argc, fuse_argv);
 
-#ifdef HPE_mingw_BUILD
 	(void) lang;
-#endif /* HPE_mingw_BUILD */
 
-#ifndef HPE_mingw_BUILD
-	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
-	lang = getenv("LANG");
-	if (! lang) {
-		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting mkltfs.\n");
-		ret = setenv("LANG", "en_US.UTF-8", 1);
-		if (ret) {
-			fprintf(stderr, "LTFS9016E Cannot set the LANG environment variable\n");
-			return MKLTFS_OPERATIONAL_ERROR;
-		}
-	}
-#endif /* HPE_mingw_BUILD */
 
 	/* Start up libltfs with the default logging level. */
-#ifndef mingw_PLATFORM
-	openlog("mkltfs", LOG_PID, LOG_USER);
-#endif
 	ret = ltfs_init(LTFS_INFO, true, false);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, "10000E", ret);

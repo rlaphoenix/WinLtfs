@@ -46,17 +46,11 @@
 *************************************************************************************
 */
 
-#ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
-#endif
 #include "libltfs/ltfs.h"
 #include "libltfs/base64.h"
 #include "key_format_ltfs.h"
 
-#ifndef mingw_PLATFORM
-#include <sys/mman.h>
-#include <sys/resource.h>
-#endif
 
 enum kfl_state {
 	KFL_UNINITIALIZED,
@@ -215,16 +209,6 @@ void *key_format_ltfs_init(struct ltfs_volume *vol, const char *id)
 {
 	CHECK_ARG_NULL(vol, NULL);
 
-#ifndef mingw_PLATFORM
-	/*
-	 * On Windows, this function is called at not only KFL_UNINITIALIZED but also KFL_INITIALIZED, KFL_CLEARED
-	 * and KFL_DESTROYED because the process keep running after a user eject a cartridge.
-	 */
-	if (state != KFL_UNINITIALIZED) {
-		ltfsmsg(LTFS_ERR, "15605E", state, KFL_UNINITIALIZED, __FUNCTION__);
-		return NULL;
-	}
-#endif
 
 	struct key_format_ltfs_data *priv = calloc(1, sizeof(struct key_format_ltfs_data));
 	if (! priv) {

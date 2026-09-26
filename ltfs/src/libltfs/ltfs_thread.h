@@ -54,15 +54,9 @@ extern "C" {
 #endif
 
 /* HPE: We don't have access to this file. */
-#if !defined(HPE_mingw_BUILD) && defined(mingw_PLATFORM)
-#include "arch/win/win_thread.h"
-#else
 
 #include <pthread.h>
 #include <sys/time.h>
-#ifndef HPE_mingw_BUILD
-#include <sys/syscall.h>
-#endif /* HPE_mingw_BUILD */
 #include <unistd.h>
 
 typedef pthread_t          ltfs_thread_t;
@@ -195,27 +189,13 @@ static inline ltfs_thread_t ltfs_thread_self(void)
 	return pthread_self();
 }
 
-#ifdef __APPLE__
-extern uint32_t ltfs_get_thread_id(void);
-#elif defined(HPE_mingw_BUILD)
 static inline uint32_t ltfs_get_thread_id(void)
 {
 	/* winpthreads' pthread_t is an integer, not the old pthreads-win32
 	 * struct with a .p member; the id is only used as an opaque token. */
 	return (uint32_t)(uintptr_t)pthread_self();
 }
-#else
-static inline uint32_t ltfs_get_thread_id(void)
-{
-	uint32_t tid;
 
-	tid = (uint32_t)syscall(SYS_gettid);
-
-	return tid;
-}
-#endif
-
-#endif
 
 #ifdef __cplusplus
 }

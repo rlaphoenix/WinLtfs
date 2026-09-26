@@ -46,16 +46,4 @@
 *************************************************************************************
 */
 
-#ifndef mingw_PLATFORM
-
-#include <uuid/uuid.h>
-
-void gen_uuid_unix(char *uuid_str)
-{
-	uuid_t tape_uuid;
-	uuid_generate(tape_uuid);
-	uuid_unparse_lower(tape_uuid, uuid_str);
-}
-
-#endif
 

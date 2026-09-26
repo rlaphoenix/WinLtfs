@@ -55,9 +55,7 @@
 *************************************************************************************
 */
 
-#ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#endif
 
 #include <sched.h>
 #include <string.h>
@@ -80,7 +78,6 @@ static char* generate_hash_key_name(const char *src_str, int *rc)
 {
 	char *key_name;
 
-#ifdef mingw_PLATFORM
 	UChar *uchar_name;
 
 	*rc =  pathname_prepare_caseless(src_str, &uchar_name, true);	// malloc is called in this function
@@ -92,10 +89,6 @@ static char* generate_hash_key_name(const char *src_str, int *rc)
 		key_name = NULL;
 	} else
 		free(uchar_name);
-#else
-	key_name = strdup(src_str);
-	*rc = 0;
-#endif
 
 	return key_name;
 }
@@ -871,7 +864,6 @@ void _fs_dump_dentry(struct dentry *ptr, int spaces)
 	 *
 	 * Format string changes to make compiler happy
 	 */
-#ifdef HPE_mingw_BUILD
 	printf("%s%s [%d] {size=%"PRIu64", realsize=%"PRIu64", readonly=%d, " \
 			"creation=%"PRId64", change=%"PRId64", modify=%"PRId64", " \
 			"access=%"PRId64"%s}\n",
@@ -880,14 +872,6 @@ void _fs_dump_dentry(struct dentry *ptr, int spaces)
 			ptr->readonly, ptr->creation_time.tv_sec, ptr->change_time.tv_sec,
 			ptr->modify_time.tv_sec, ptr->access_time.tv_sec,
 			ptr->deleted ? " (deleted)" : "");
-#else
-	printf("%s%s [%d] {size=%llu, realsize=%llu, readonly=%d, creation=%lld, change=%lld, modify=%lld, access=%lld%s}\n",
-			ptr->name, ptr->isdir?"/":"", ptr->numhandles,
-			(unsigned long long)ptr->size, (unsigned long long)ptr->realsize,
-			ptr->readonly, (long long int) ptr->creation_time.tv_sec, (long long int) ptr->change_time.tv_sec,
-			(long long int) ptr->modify_time.tv_sec, (long long int) ptr->access_time.tv_sec,
-			ptr->deleted ? " (deleted)" : "");
-#endif /* HPE_mingw_BUILD */
 
 	/* Extent data */
 	TAILQ_FOREACH(extent, &ptr->extentlist, list) {
@@ -907,13 +891,8 @@ void _fs_dump_dentry(struct dentry *ptr, int spaces)
 		 *
 		 * Format string changes to make compiler happy
 		 */
-#ifdef HPE_mingw_BUILD
 		printf("{xattr key=%s, value=%.*s, size=%Iu}\n", xattr->key,
 				(int)xattr->size, xattr->value, xattr->size);
-#else
-		printf("{xattr key=%s, value=%.*s, size=%zu}\n", xattr->key, (int)xattr->size,
-				xattr->value, xattr->size);
-#endif /* HPE_mingw_BUILD */
 	}
 }
 
@@ -955,20 +934,12 @@ void fs_dump_tree(struct dentry *root)
 	 *
 	 * Format string changes to make compiler happy
 	 */
-#ifdef HPE_mingw_BUILD
 	printf("%s [%d] {size=%"PRIu64", readonly=%d, creation=%"PRId64", " \
 			"change=%"PRId64", modify=%"PRId64", access=%"PRId64"}\n",
 			root->name, root->numhandles,
 			root->size, root->readonly,
 			root->creation_time.tv_sec, root->change_time.tv_sec,
 			root->modify_time.tv_sec, root->access_time.tv_sec);
-#else
-	printf("%s [%d] {size=%"PRIu64", readonly=%d, creation=%lld, change=%lld, modify=%lld, access=%lld}\n",
-			root->name, root->numhandles,
-			root->size, root->readonly,
-			(long long int) root->creation_time.tv_sec, (long long int) root->change_time.tv_sec,
-			(long long int) root->modify_time.tv_sec, (long long int) root->access_time.tv_sec);
-#endif /* HPE_mingw_BUILD */
 
 	/* Extended attributes data */
 	TAILQ_FOREACH(xattr, &root->xattrlist, list) {
@@ -979,13 +950,8 @@ void fs_dump_tree(struct dentry *root)
 		 *
 		 * Format string changes to make compiler happy
 		 */
-#ifdef HPE_mingw_BUILD
 		printf("{xattr key=%s, value=%.*s, size=%Iu}\n", xattr->key,
 				(int)xattr->size, xattr->value, xattr->size);
-#else
-		printf("{xattr key=%s, value=%.*s, size=%zu}\n", xattr->key, (int)xattr->size,
-			xattr->value, xattr->size);
-#endif /* HPE_mingw_BUILD */
 	}
 
 	return _fs_dump_tree(root, 3);

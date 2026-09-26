@@ -49,13 +49,8 @@
 #ifndef signal_internal_h_
 #define signal_internal_h_
 
-#ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
-#endif
 #include <signal.h>
 
-#ifdef __APPLE__
-typedef void (*sighandler_t)(int);
-#endif
 
 #endif /* time_internal_h_ */

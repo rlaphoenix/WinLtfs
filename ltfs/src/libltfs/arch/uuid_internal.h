@@ -49,15 +49,9 @@
 #ifndef __uuid_internal_h__
 #define __uuid_internal_h__
 
-#ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
 #define ltfs_gen_uuid(uuid_str) gen_uuid_win(uuid_str)
 
-#else
-void gen_uuid_unix(char *uuid_str);
-#define ltfs_gen_uuid(uuid_str) gen_uuid_unix(uuid_str)
-
-#endif /* mingw_PLATFORM */
 
 #endif /* __uuid_internal_h__ */
 

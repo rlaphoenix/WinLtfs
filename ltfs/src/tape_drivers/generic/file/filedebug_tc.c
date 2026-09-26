@@ -49,9 +49,7 @@
 **
 *************************************************************************************
 */
-#ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
-#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -81,11 +79,7 @@ volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGH
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
 /* Default directory where the emulated tape contents go to */
-#ifdef mingw_PLATFORM
 const char *filedebug_default_device = "c:\\tmp\\ltfs\\tape";
-#else
-const char *filedebug_default_device = "/tmp/ltfs/tape";
-#endif
 
 #define MAX_PARTITIONS 2
 #define KB   (1024)
@@ -101,11 +95,7 @@ const char *filedebug_default_device = "/tmp/ltfs/tape";
 #define MISSING_EOD (0xFFFFFFFFFFFFFFFFLL)
 
 /* For drive link feature */
-#ifdef mingw_PLATFORM
 #define DRIVE_LIST_DIR    "ltfs"
-#else
-#define DRIVE_LIST_DIR    "/tmp"
-#endif
 
 /**
  * Emulator-specific data structures, used in lieu of a file descriptor

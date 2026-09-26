@@ -51,13 +51,8 @@
 extern "C" {
 #endif
 
-#ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
 #define PROFILER_FILE_MODE "wb+"
-#else
-#define PROFILER_FILE_MODE "w+"
-#include <sys/wait.h>
-#endif
 
 #include <stdlib.h>
 #include <sys/types.h>

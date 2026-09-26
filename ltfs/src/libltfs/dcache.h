@@ -57,13 +57,8 @@ extern "C" {
 #endif
 #define _XOPEN_SOURCE 500
 
-#ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#endif
 
-#ifndef mingw_PLATFORM
-#include <ftw.h>
-#endif
 #include <sys/types.h>
 #include <sys/time.h>
 #include <utime.h>

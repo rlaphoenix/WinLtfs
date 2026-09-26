@@ -46,9 +46,7 @@
 *************************************************************************************
 */
 
-#ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
-#endif
 
 #include <stdlib.h>
 #include <errno.h>

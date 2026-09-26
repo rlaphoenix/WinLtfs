@@ -46,18 +46,3 @@
 *************************************************************************************
 */
 
-#ifdef __APPLE__
-
-#include <pthread.h>
-#include <mach/mach.h>
-
-uint32_t ltfs_get_thread_id(void)
-{
-	uint32_t tid;
-
-	tid = (uint32_t)pthread_mach_thread_np(pthread_self());
-
-	return tid;
-}
-
-#endif

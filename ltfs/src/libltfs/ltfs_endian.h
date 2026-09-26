@@ -48,11 +48,7 @@
 #define __LTFS_ENDIAN_H__
 
 /* TODO: verify that this is correct for mingw */
-#ifdef mingw_PLATFORM
 #include <winsock2.h>
-#else
-#include <arpa/inet.h>
-#endif /* mingw_PLATFORM */
 
 /**
  * Convert a uint64_t value (src) to big endian and store it in the 8-byte buffer

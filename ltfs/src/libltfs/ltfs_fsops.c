@@ -80,13 +80,9 @@ int ltfs_fsops_open(const char *path, bool open_write, bool use_iosched, struct 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	if (open_write) {
-#ifdef HPE_mingw_BUILD
 		ret = tape_read_only(vol->device, ltfs_part_id2num(ltfs_ip_id(vol), vol));
 		if (ret == 0 || ret == -LTFS_LESS_SPACE)
 			ret = tape_read_only(vol->device, ltfs_part_id2num(ltfs_dp_id(vol), vol));
-#else /* Appending was allowed when VAL locked hence differenciating the code */
-		ret = ltfs_get_tape_readonly(vol);
-#endif
 		/* Check for a read-only volume, but ignore ENOSPC: file systems do
 		 * not typically check for medium full on open.
 		 */
@@ -710,21 +706,6 @@ int ltfs_fsops_rename(const char *from, const char *to, ltfs_file_id *id, struct
 		goto out_unlock;
 	}
 
-#ifdef __APPLE__
-	/*
-	 * Directory move is inhibited because of a MacFUSE bug.
-	 * MacFUSE requests unexpected path after directory move, and that problem
-	 * causes an unexpected move.
-	 */
-	if (fromdentry->isdir && fromdir != todir) {
-		ltfsmsg(LTFS_INFO, "11259I");
-		ret = -LTFS_DIRMOVE;
-		if (todentry && fromdentry != todentry)
-			fs_release_dentry(todentry);
-		fs_release_dentry(fromdentry);
-		goto out_unlock;
-	}
-#endif
 
 	/* If the destination dentry was found and is distinct from the source dentry, try
 	 * to unlink it before going forward with the rename. */
@@ -1930,12 +1911,6 @@ int ltfs_fsops_readlink_path(const char* path, char* buf, size_t size, ltfs_file
 			ret = sscanf(value, "%d:%d", &num1, &num2);
 			if ( ( ret == 1 ) && ( num1 != 0 ) ){
 				memset( buf, 0, size);
-#ifndef mingw_PLATFORM
-				if ( size < strlen(d->target)-num1+vol->mountpoint_len+1 ){
-					return -LTFS_SMALL_BUFFER;
-				}
-				strcpy(buf, vol->mountpoint);
-#endif
 				strcat(buf, d->target+num1 );
 				ltfsmsg(LTFS_DEBUG, "11324D", d->target, buf);
 			}

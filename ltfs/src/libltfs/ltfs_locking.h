@@ -59,31 +59,7 @@ extern "C" {
 #endif
 
 /* HPE: We don't have access to this file. */
-#if defined(mingw_PLATFORM) && !defined(HPE_mingw_BUILD)
-static inline void backtrace_info(void)
-{
-	return;
-}
-
-#include "arch/win/win_locking.h"
-#elif defined(HPE_mingw_BUILD)
 /* Do nothing */
-#else
-#include <execinfo.h> /* For backtrace() */
-
-static inline void backtrace_info(void)
-{
-	void *address[50];
-	size_t back_num, i;
-
-	back_num = backtrace( address, 50 );
-	for( i = 0; i < back_num; ++i ) {
-		ltfsmsg( LTFS_ERR,"17194E", i, address[i] );
-	}
-
-	return;
-}
-#endif
 
 #include <pthread.h>
 #include <unistd.h>

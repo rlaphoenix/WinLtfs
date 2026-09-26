@@ -52,14 +52,9 @@
 ************************************************************************************* 
 */
 
-#ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#endif
 #include <stdlib.h>
 #include <string.h>
-#ifndef mingw_PLATFORM
-#include <dlfcn.h>
-#endif
 #include <errno.h>
 
 #include "libltfs/ltfs_error.h"
@@ -117,12 +112,8 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 
 	if (! get_ops) {
 		ltfsmsg(LTFS_ERR, "11263E", dlerror());
-#ifdef HPE_mingw_BUILD
 		/* Get rid of compiler warning for not checking the result*/
 		(void)dlclose(pl->lib_handle);
-#else
-		dlclose(pl->lib_handle);
-#endif
 		pl->lib_handle = NULL;
 		return -LTFS_PLUGIN_LOAD;
 	}
@@ -144,12 +135,8 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 
 	if (! get_messages) {
 		ltfsmsg(LTFS_ERR, "11284E", dlerror());
-#ifdef HPE_mingw_BUILD
 		/* Get rid of compiler warning for not checking the result*/
 		(void)dlclose(pl->lib_handle);
-#else
-		dlclose(pl->lib_handle);
-#endif
 		pl->lib_handle = NULL;
 		return -LTFS_PLUGIN_LOAD;
 	}
@@ -158,12 +145,8 @@ int plugin_load(struct libltfs_plugin *pl, const char *type, const char *name,
 	pl->ops = get_ops();
 	if (! pl->ops) {
 		ltfsmsg(LTFS_ERR, "11264E");
-#ifdef HPE_mingw_BUILD
 		/* Get rid of compiler warning for not checking the result*/
 		(void)dlclose(pl->lib_handle);
-#else
-		dlclose(pl->lib_handle);
-#endif
 		pl->lib_handle = NULL;
 		return -LTFS_PLUGIN_LOAD;
 	}

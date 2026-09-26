@@ -49,17 +49,6 @@
 #ifndef __osx_string_h
 #define __osx_string_h
 
-#ifdef __APPLE__
-
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-
-size_t strnlen(const char *s, size_t maxlen);
-
-char *strndup(const char *s, size_t maxlen);
-
-#endif /* __APPLE__ */
 
 #endif /* __osx_string_h */
 

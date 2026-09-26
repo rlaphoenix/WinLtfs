@@ -62,7 +62,6 @@
 #include <cguid.h>
 #include <shlobj.h>
 
-#ifdef HPE_mingw_BUILD
 #include <stddef.h>
 #include <dirent.h>
 /* 
@@ -74,7 +73,6 @@
  */
 #define _OLEAUT32_ 1
 #define _RPCRT4_   1
-#endif
 
 #include <oleauto.h>
 #include <rpc.h>
@@ -144,12 +142,8 @@ int setenv(const char *name, const char *value, int overwrite )
 
 int unsetenv( const char *name )
 {
-#ifdef HPE_mingw_BUILD
 	/* Fix compiler warning */
 	FreeEnvironmentStrings( (LPCH)name );
-#else
-	FreeEnvironmentStrings( name );
-#endif
 	return 0;
 }
 
@@ -342,7 +336,6 @@ struct tm *gmtime_libltfs(const time_t *timep, struct tm *result)
  * Our MinGW environment has no scandir, so create one
  *  
  */
-#ifdef HPE_mingw_BUILD
 int scandir(const char *dirp,
 		struct dirent ***namelist,
 		int (*filter)(const struct dirent *entry),
@@ -420,7 +413,6 @@ int scandir(const char *dirp,
 	*namelist = dirent_array;
 	return entry_count;
 }
-#endif
 
 /**
  * 'strndup' implementation for mingw based builds. Since Mingw32 doesn't support strndup. We

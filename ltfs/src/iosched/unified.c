@@ -2015,11 +2015,9 @@ int _unified_flush_unlocked(struct dentry *d, struct unified_data *priv)
      *
      * actgen -d q: directory.act
      */
-#ifdef HPE_mingw_BUILD
 	/* Remove dpr from the DP queue and working set */
 	_unified_update_queue_membership(false, true, REQUEST_DP, dpr, priv);
 	_unified_update_queue_membership(false, true, REQUEST_PARTIAL, dpr, priv);
-#endif
 
 	if (TAILQ_EMPTY(&dpr->requests))
 		return 0;
@@ -2030,11 +2028,6 @@ int _unified_flush_unlocked(struct dentry *d, struct unified_data *priv)
      * Processing moved above
      * 
      */
-#ifndef HPE_mingw_BUILD
-	/* Remove dpr from the DP queue and working set */
-	_unified_update_queue_membership(false, true, REQUEST_DP, dpr, priv);
-	_unified_update_queue_membership(false, true, REQUEST_PARTIAL, dpr, priv);
-#endif
 
 	ltfs_mutex_lock(&dpr->io_lock);
 
@@ -2364,9 +2357,7 @@ struct iosched_ops *iosched_get_ops(void)
  * data. 
  *  
  */
-#if !defined(mingw_PLATFORM) || defined(HPE_mingw_BUILD)
 extern char iosched_unified_dat[];
-#endif
 
 const char *iosched_get_message_bundle_name(void **message_data)
 {
@@ -2377,10 +2368,6 @@ const char *iosched_get_message_bundle_name(void **message_data)
      * data. 
      *  
      */
-#if !defined(mingw_PLATFORM) || defined(HPE_mingw_BUILD)
 	*message_data = iosched_unified_dat;
-#else
-	*message_data = NULL;
-#endif
 	return "iosched_unified";
 }

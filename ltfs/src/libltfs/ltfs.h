@@ -68,9 +68,7 @@
 extern "C" {
 #endif
 
-#ifdef mingw_PLATFORM
 #include "arch/win/win_util.h"
-#endif
 
 
 #include <stdio.h>
@@ -88,14 +86,7 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifndef mingw_PLATFORM
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#endif
 
-#ifdef __APPLE__
-#include <ICU/unicode/utypes.h>
-#else
 /* 
  * OSR
  * 
@@ -104,18 +95,10 @@ extern "C" {
  * defined. Strange, yes, but true 
  *  
  */
-#if defined(HPE_mingw_BUILD) && defined(__MINGW32__)
 #undef __MINGW32__
 #include <unicode/utypes.h>
 #define __MINGW32__
-#else 
-#include <unicode/utypes.h>
-#endif /* #if defined(HPE_mingw_BUILD) && defined(__MINGW32__) */
-#endif /* __APPLE__ */
 
-#ifndef mingw_PLATFORM
-#include <sys/xattr.h>
-#endif
 
 #include "libltfs/arch/signal_internal.h"
 #include "libltfs/arch/arch_info.h"
@@ -135,11 +118,7 @@ struct tape_ops;
 struct device_data;
 
 #ifndef LTFS_DEFAULT_WORK_DIR
-#ifdef mingw_PLATFORM
 #define LTFS_DEFAULT_WORK_DIR         "c:/tmp/ltfs"
-#else
-#define LTFS_DEFAULT_WORK_DIR         "/tmp/ltfs"
-#endif /* mingw_PLATFORM */
 #endif /* LTFS_DEFAULT_WORK_DIR */
 
 #define LTFS_BUILD_VERSION            12
@@ -179,12 +158,7 @@ struct device_data;
 #define INDEX_MAX_COMMENT_LEN         65536 /* Maximum comment field length (per LTFS Format) */
 #define MAX_VOLUME_NAME_SIZE 		  159   /* Maximum size of the user medium text label is 160 with a NULL character termination */
 
-#ifdef __APPLE__
-#define PACKAGE_NAME                  "LTFS"
-#define PACKAGE_VERSION               "3.5.0"
-#else
 #include "config.h"
-#endif
 
 #ifdef HPE_BUILD
 #define PACKAGE_OWNER                 "WinLtfs"
@@ -219,11 +193,7 @@ struct device_data;
 #endif
 #define LTFS_LIVELINK_EA_NAME         "ltfs.vendor.IBM.prefixLength"
 
-#ifdef __APPLE__
-#define BYTE_MULTIPLIER					(1000 * 1000 * 1000)
-#else
 #define BYTE_MULTIPLIER					(1024 * 1024 * 1024)
-#endif /* __APPLE__ */
 
 #define INTERRUPTED_GOTO(rc, label)				\
 	do{											\

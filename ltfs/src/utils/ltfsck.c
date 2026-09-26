@@ -61,12 +61,7 @@
 ************************************************************************************* 
 */
 
-#ifdef mingw_PLATFORM
 #include "libltfs/arch/win/win_util.h"
-#else
-#include <uuid/uuid.h>
-#include <syslog.h>
-#endif /* mingw_PLATFORM */
 
 #include <getopt.h>
 
@@ -85,9 +80,6 @@
 volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
 
-#ifdef __APPLE__
-#include "libltfs/arch/osx/osx_string.h"
-#endif
 
 /* 
  * OSR
@@ -96,11 +88,7 @@ volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGH
  * data. 
  *  
  */
-#if defined(mingw_PLATFORM) && !defined(HPE_mingw_BUILD)
-char *bin_ltfsck_dat;
-#else
 extern char bin_ltfsck_dat[];
-#endif
 
 /**< Operation mode */
 enum {
@@ -312,25 +300,9 @@ int main(int argc, char **argv)
 	}
 	struct fuse_args args = FUSE_ARGS_INIT(fuse_argc, fuse_argv);
 
-#ifndef HPE_mingw_BUILD
-	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
-	lang = getenv("LANG");
-	if (! lang) {
-		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting ltfsck.\n");
-		ret = setenv("LANG", "en_US.UTF-8", 1);
-		if (ret) {
-			fprintf(stderr, "LTFS9016E Cannot set the LANG environment variable\n");
-			return LTFSCK_OPERATIONAL_ERROR;
-		}
-	}
-#else
 	(void) lang;
-#endif /* HPE_mingw_BUILD */
 
 	/* Start up libltfs with the default logging level. */
-#ifndef mingw_PLATFORM
-	openlog("ltfsck", LOG_PID, LOG_USER);
-#endif
 	ret = ltfs_init(LTFS_INFO, true, false);
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, "10000E", ret);
@@ -1059,16 +1031,11 @@ struct index_info * _make_new_index(struct ltfs_volume *vol)
 
 void _print_index_header(bool full_info, int openforwrite_mode)
 {
-#ifdef mingw_PLATFORM
 	printf("Time zone: %s\n", get_local_timezone());
 	printf("Generation: Date       Time                        SelfPtr->BackPtr (Part, Pos)\n");
 	if (strcmp(get_local_timezone(), TIMEZONE_UTC) != 0) {
 	printf("           (UTC Date   UTC Time)                                               \n");
 	}
-#else
-	printf("Generation: Date       Time               Zone     SelfPtr->BackPtr (Part, Pos)\n");
-	printf("           (UTC Date   UTC Time           UTC)                                 \n");
-#endif
 	if(full_info) {
 	printf("            LTFS Format Version, Creator\n");
 	printf("            Volume name\n");
@@ -1088,22 +1055,13 @@ void _print_index_header(bool full_info, int openforwrite_mode)
 
 void _print_index(struct ltfs_volume *vol, struct index_info *list, struct other_check_opts *opt)
 {
-#ifndef HPE_mingw_BUILD
-	/* Unused variable in our build */
-	const char *tz;
-	(void) tz;
-#endif
 	struct tm *t_st;
 	int i, ret;
 
 	if(!opt)
 		return;
 
-#ifdef HPE_mingw_BUILD
 	t_st = get_localtime(&list->mod_time.tv_sec);
-#else
-	t_st = get_localtime((long *)&list->mod_time.tv_sec);
-#endif /* HPE_mingw_BUILD */
 
 	if (list->generation == (unsigned int)-1){
 		printf("%s: %04d-%02d-%02d %02d:%02d:%02d.%09ld %s      (%d, %"PRIu64")->(\?\?, \?\?)\n",
@@ -1114,20 +1072,12 @@ void _print_index(struct ltfs_volume *vol, struct index_info *list, struct other
 		list->backptr.block == 0) {
 		printf("%10d: %04d-%02d-%02d %02d:%02d:%02d.%09ld %s      (%d, %"PRIu64") <<Initial Index>>\n",
 			   list->generation, t_st->tm_year+1900, t_st->tm_mon+1, t_st->tm_mday,
-#ifdef mingw_PLATFORM
 			   t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, "   ",
-#else
-			   t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, t_st->tm_zone,
-#endif
 			   ltfs_part_id2num(list->selfptr.partition, vol), list->selfptr.block);
 	} else {
 		printf("%10d: %04d-%02d-%02d %02d:%02d:%02d.%09ld %s      (%d, %"PRIu64")->(%d, %"PRIu64")\n",
 			   list->generation, t_st->tm_year+1900, t_st->tm_mon+1, t_st->tm_mday,
-#ifdef mingw_PLATFORM
 			   t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, "   ",
-#else
-			   t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, t_st->tm_zone,
-#endif
 			   ltfs_part_id2num(list->selfptr.partition, vol), list->selfptr.block,
 			   ltfs_part_id2num(list->backptr.partition, vol), list->backptr.block);
 	}
@@ -1137,31 +1087,11 @@ void _print_index(struct ltfs_volume *vol, struct index_info *list, struct other
 		printf("           (%04d-%02d-%02d %02d:%02d:%02d.%09ld %s)\n",
 			   0, 0, 0,
 			   0, 0, 0, (unsigned long) 0, "---");
-#ifdef mingw_PLATFORM
 	} else if(strcmp(get_local_timezone(), TIMEZONE_UTC) != 0) {
 		t_st = get_gmtime(&list->mod_time.tv_sec);
 		printf("           (%04d-%02d-%02d %02d:%02d:%02d.%09ld)\n",
 			   t_st->tm_year+1900, t_st->tm_mon+1, t_st->tm_mday,
 			   t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec);
-#else
-	}else if(strcmp(t_st->tm_zone, "UTC") != 0) {
-		const char *tz = getenv("TZ");
-		setenv("TZ", "", 1);
-		tzset();
-#ifdef __APPLE__
-		t_st = get_localtime((time_t *)&list->mod_time.tv_sec);
-#else
-		t_st = get_localtime(&list->mod_time.tv_sec);
-#endif /* __APPLE__ */
-		printf("           (%04d-%02d-%02d %02d:%02d:%02d.%09ld %s)\n",
-			   t_st->tm_year+1900, t_st->tm_mon+1, t_st->tm_mday,
-			   t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, t_st->tm_zone);
-		if(tz)
-			setenv("TZ", tz, 1);
-		else
-			unsetenv("TZ");
-		tzset();
-#endif
 	}
 
 	if (opt->full_index_info) {
@@ -1176,11 +1106,7 @@ void _print_index(struct ltfs_volume *vol, struct index_info *list, struct other
 
 		if(list->criteria && list->criteria->have_criteria) {
 			printf("            [%s] ", list->criteria_allow_update ? "  Allowed  " : "Not allowed");
-#ifdef mingw_PLATFORM			
             printf("%I64u ", (long long unsigned int)list->criteria->max_filesize_criteria);
-#else
-            printf("%llu ", (long long unsigned int)list->criteria->max_filesize_criteria);
-#endif
 			if(list->criteria->glob_patterns) {
 				i = 0;
 				while(1) {
@@ -1238,11 +1164,6 @@ void _print_index(struct ltfs_volume *vol, struct index_info *list, struct other
 //  the command line.     HPE 03-Aug-18
 void _print_index_for_pipe (struct ltfs_volume *vol, struct index_info *list, struct other_check_opts *opt)
 {
-#ifndef HPE_mingw_BUILD
-    /* Unused variable in our build */
-    const char *      tz;
-    (void)            tz;
-#endif
     struct tm        *t_st;
     int               ret;
     struct file_list *current;
@@ -1258,19 +1179,11 @@ void _print_index_for_pipe (struct ltfs_volume *vol, struct index_info *list, st
     }
     
     // Start with the basics about the index: generation & timestamp...
-#ifdef HPE_mingw_BUILD
     t_st = get_localtime(&list->mod_time.tv_sec);
-#else
-    t_st = get_localtime((long *)&list->mod_time.tv_sec);
-#endif /* HPE_mingw_BUILD */
     
     printf ("%10d | %04d-%02d-%02d %02d:%02d:%02d.%09ld %s | ",
             list->generation, t_st->tm_year+1900, t_st->tm_mon+1, t_st->tm_mday,
-#ifdef mingw_PLATFORM
             t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, "   ");
-#else
-            t_st->tm_hour, t_st->tm_min, t_st->tm_sec, list->mod_time.tv_nsec, t_st->tm_zone);
-#endif
     
     // In pipe mode, we'll always check for any open-for-write files (provided
     //  we haven't already done so, indicated by this "special" filename...)
@@ -1352,20 +1265,12 @@ void print_volume_info(struct ltfs_volume *vol)
 	ltfsmsg(LTFS_INFO, "16025I", ltfs_get_volume_uuid(vol));
 
 	format_time = ltfs_get_format_time(vol);
-#ifdef HPE_mingw_BUILD
 	t_st = get_localtime(&(format_time.tv_sec));
-#else
-	t_st = get_localtime((long *)&(format_time.tv_sec));
-#endif /* HPE_mingw_BUILD */
 
 	ltfsmsg(LTFS_INFO, "16026I",
 			t_st->tm_year+1900, t_st->tm_mon+1, t_st->tm_mday,
 			t_st->tm_hour, t_st->tm_min, t_st->tm_sec, format_time.tv_nsec,
-#ifdef mingw_PLATFORM
 			"   ");
-#else
-			t_st->tm_zone);
-#endif
 
 	ltfsmsg(LTFS_INFO, "16027I", ltfs_get_blocksize(vol));
 	ltfsmsg(LTFS_INFO, "16028I", ltfs_get_compression(vol) ? "Enabled" : "Disabled");

@@ -71,9 +71,6 @@
 ************************************************************************************* 
 */
 
-#ifdef __APPLE__
-#include <ICU/unicode/uclean.h>
-#else
 
 /* 
  * OSR
@@ -83,17 +80,12 @@
  * defined. Strange, yes, but true 
  *  
  */
-#if defined(HPE_mingw_BUILD) && defined(__MINGW32__)
 
 #undef __MINGW32__
 #include <unicode/uclean.h>
 #define __MINGW32__
 
-#else 
-#include <unicode/uclean.h>
-#endif /* #if defined(HPE_mingw_BUILD) && defined(__MINGW32__) */
 
-#endif
 
 #include "arch/uuid_internal.h"
 
@@ -124,10 +116,6 @@
  * Linker complains about too many definitions of copyright if
  * this is not left out of the build
  */
-#ifndef HPE_mingw_BUILD
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
-	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
-#endif /* HPE_mingw_BUILD */
 
 /** \file
  * The typical use case for this library is as follows.
@@ -241,82 +229,18 @@ bool ltfs_is_interrupted(void)
  * to kill ltfs, mkltfs, ltfsck cleanly
  */
 int ltfs_set_signal_handlers(void)
-#ifdef mingw_PLATFORM
 {
   return 0;
 }
-#else
-{
-	sighandler_t ret;
-
-	interrupted = false;
-
-	/* Terminate by CTRL-C */
-	ret = signal(SIGINT, _ltfs_terminate);
-	if(ret == SIG_ERR)
-		return -LTFS_SIG_HANDLER_ERR;
-
-	/* Terminate by disconnecting terminal */
-	ret = signal(SIGHUP, _ltfs_terminate);
-	if(ret == SIG_ERR) {
-		signal(SIGINT, SIG_DFL);
-		return -LTFS_SIG_HANDLER_ERR;
-	}
-
-	/* Terminate by CTRL-\ */
-	ret = signal(SIGQUIT, _ltfs_terminate);
-	if(ret == SIG_ERR) {
-		signal(SIGINT, SIG_DFL);
-		signal(SIGHUP, SIG_DFL);
-		return -LTFS_SIG_HANDLER_ERR;
-	}
-
-	/* Terminate by default signal of kill command */
-	ret = signal(SIGTERM, _ltfs_terminate);
-	if(ret == SIG_ERR) {
-		signal(SIGINT, SIG_DFL);
-		signal(SIGHUP, SIG_DFL);
-		signal(SIGQUIT, SIG_DFL);
-		return -LTFS_SIG_HANDLER_ERR;
-	}
-
-	return 0;
-}
-#endif
 
 /**
  * This function can be used to disable libltfs signal handler.
  * This function will be called before calling fuse_main
  */
 int ltfs_unset_signal_handlers(void)
-#ifdef mingw_PLATFORM
 {
   return 0;
 }
-#else
-{
-	sighandler_t rc;
-	int ret = 0;
-
-	rc = signal(SIGINT, SIG_DFL);
-	if (rc == SIG_ERR)
-		ret = -LTFS_SIG_HANDLER_ERR;
-
-	rc = signal(SIGHUP, SIG_DFL);
-	if (rc == SIG_ERR)
-		ret = -LTFS_SIG_HANDLER_ERR;
-
-	rc = signal(SIGQUIT, SIG_DFL);
-	if (rc == SIG_ERR)
-		ret = -LTFS_SIG_HANDLER_ERR;
-
-	rc = signal(SIGTERM, SIG_DFL);
-	if (rc == SIG_ERR)
-		ret = -LTFS_SIG_HANDLER_ERR;
-
-	return ret;
-}
-#endif
 
 /**
  * Call this after all ltfs_* calls are finished.
@@ -1438,11 +1362,7 @@ int ltfs_start_mount(bool trial, struct ltfs_volume *vol)
 			 * Make this a warning instead of an error. We log errors to the
 			 * event log and this just ends up being noise.
 			 */
-#ifndef HPE_mingw_BUILD		
-			ltfsmsg(LTFS_ERR, "11006E");
-#else
 			ltfsmsg(LTFS_WARN, "11006E");
-#endif			
 		}
 		return ret;
 	}
@@ -4073,7 +3993,6 @@ int mkdir_p(const char *path, mode_t mode)
 	 * HPE: convert forward-slash chars to back-slashes, so that the iterative mkdir works correctly
 	 * on Windows
 	 */
-#ifdef HPE_mingw_BUILD
 	ptr = buf;
 	while (*ptr != '\0') {
 		if (*ptr == '\\') {
@@ -4081,7 +4000,6 @@ int mkdir_p(const char *path, mode_t mode)
 		}
 		ptr++;
 	}
-#endif /* HPE_mingw_BUILD */
 
 	for (ptr = (buf[0] == '/') ? &buf[1] : buf; *ptr; ++ptr) {
 		bool last = ptr[1] == '\0';
@@ -4094,11 +4012,7 @@ int mkdir_p(const char *path, mode_t mode)
 			 * In our MinGW environment, mkdir takes one param
 			 */
 			/* TODO: No difference in the code for the two builds. Verify this. */
-#ifdef HPE_mingw_BUILD
 			ret = mkdir(buf, mode);
-#else
-			ret = mkdir(buf, mode);
-#endif /* HPE_mingw_BUILD */
 
 			if (ret && errno != EEXIST) {
 				ltfsmsg(LTFS_ERR, "9014E", path, strerror(errno));

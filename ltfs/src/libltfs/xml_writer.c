@@ -61,11 +61,9 @@
 #include "arch/time_internal.h"
 
 /* fsync emulation for MinGW */
-#ifdef HPE_mingw_BUILD
 #include <windows.h>
 #define HAVE_FSYNC 1
 #define fsync(fd) (FlushFileBuffers ((HANDLE) _get_osfhandle(fd)) ? 0 : -1)
-#endif /* HPE_mingw_BUILD */
 
 /**
  * Format a raw timespec structure for the XML file.

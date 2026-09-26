@@ -62,11 +62,6 @@
 */
 
 #include <dirent.h>
-#ifndef HPE_mingw_BUILD
-#include <syslog.h>
-#include <pwd.h>
-#include <grp.h>
-#endif /* HPE_mingw_BUILD */
 
 #include "ltfs_fuse.h"
 #include "libltfs/ltfs.h"
@@ -179,11 +174,7 @@ void single_drive_advanced_usage(const char *default_driver, struct ltfs_fuse_da
 	ltfsresult("14441I", LTFS_INFO); /* -o verbose=<num> */
 	ltfsresult("14425I"); /* -o eject */
 	ltfsresult("14439I"); /* -o noeject */
-#ifdef HPE_mingw_BUILD
 	ltfsresult("14480I"); /* -o sync_type=type */
-#else
-	ltfsresult("14427I"); /* -o sync_type=type */
-#endif /* HPE_mingw_BUILD */
 	ltfsresult("14443I"); /* -o force_mount_no_eod */
 	/*ltfsresult("14436I");*/ /* -o device_list */
 	ltfsresult("14437I"); /* -o rollback_mount */
@@ -220,11 +211,7 @@ void usage(char *progname, struct ltfs_fuse_data *priv)
 		ltfsresult("14404I", LTFS_DEFAULT_WORK_DIR);      /* -o work_directory=<dir> */
 		ltfsresult("14405I");                             /* -o trace */
 		ltfsresult("14425I");                             /* -o eject */
-#ifdef HPE_mingw_BUILD
 		ltfsresult("14480I", LONG_MAX / 60);              /* -o sync_type=type */
-#else
-		ltfsresult("14427I", LONG_MAX / 60);              /* -o sync_type=type */
-#endif /* HPE_mingw_BUILD */
 		ltfsresult("14443I");                             /* -o force_mount_no_eod */
 		/*ltfsresult("14436I");*/                         /* -o device_list */
 		ltfsresult("14437I");                             /* -o rollback_mount */
@@ -266,38 +253,12 @@ mode_t parse_mode(char *input)
 
 uid_t parse_uid(const char *input)
 {
-#ifndef HPE_mingw_BUILD
-	const char *i;
-	struct passwd *pw = getpwnam(input);
-	if (pw)
-		return pw->pw_uid;
-	if (input[0] == '\0')
-		return (uid_t)-1;
-	for (i=input; *i; ++i)
-		if (*i < '0' || *i > '9')
-			return (uid_t)-1;
-	return strtoul(input, NULL, 10);
-#else
 	return 0;
-#endif /* HPE_mingw_BUILD */
 }
 
 gid_t parse_gid(const char *input)
 {
-#ifndef HPE_mingw_BUILD
-	const char *i;
-	struct group *gr = getgrnam(input);
-	if (gr)
-		return gr->gr_gid;
-	if (input[0] == '\0')
-		return (gid_t)-1;
-	for (i=input; *i; ++i)
-		if (*i < '0' || *i > '9')
-			return (gid_t)-1;
-	return strtoul(input, NULL, 10);
-#else
 	return 0;
-#endif /* HPE_mingw_BUILD */
 }
 
 size_t parse_size_t(const char *input)
@@ -573,27 +534,13 @@ int main(int argc, char **argv)
 	void *message_handle;
 
 	/* Suppress warning on Windows builds. */
-#ifdef HPE_mingw_BUILD
 	(void) lang;
 	(void) mount_options;
-#endif /* HPE_mingw_BUILD */
 
 	priv->verbose = LTFS_INFO;
 	priv->allow_other = (geteuid() == 0) ? 1 : 0;
 	priv->pid_orig = getpid();
 
-#ifndef HPE_mingw_BUILD
-	/* Check for LANG variable and set it to en_US.UTF-8 if it is unset. */
-	lang = getenv("LANG");
-	if (! lang) {
-		fprintf(stderr, "LTFS9015W Setting the locale to 'en_US.UTF-8'. If this is wrong, please set the LANG environment variable before starting ltfs.\n");
-		ret = setenv("LANG", "en_US.UTF-8", 1);
-		if (ret) {
-			fprintf(stderr, "LTFS9016E Cannot set the LANG environment variable\n");
-			return 1;
-		}
-	}
-#endif /* HPE_mingw_BUILD */
 
 	/* Start up libltfs with the default logging level. User overrides are
 	 * processed later, after command line parsing. */
@@ -658,7 +605,6 @@ int main(int argc, char **argv)
 	}
 	
 	/* Not supported on Windows. TODO: Verify this again.*/
-#ifndef HPE_mingw_BUILD
 	/* Bring in extra mount options set in the config file */
 	mount_options = config_file_get_options("single-drive", priv->config);
 	if (! mount_options)
@@ -673,7 +619,6 @@ int main(int argc, char **argv)
 		free(mount_options[i]);
 	}
 	free(mount_options);
-#endif /* HPE_mingw_BUILD */
 
 	/* Parse command line options again, this time for real */
 	priv->first_parsing_pass = false;
@@ -751,11 +696,7 @@ int main(int argc, char **argv)
 	/* 16-Aug-18     left to make decisions rather than the kernel thinking it knows */
 	/* CR11168       best... used to cause 'Operation not permitted' errors...       */
 	/*********************************************************************************/
-#ifdef __APPLE__
-	ret = fuse_opt_add_arg(&args, "-odefer_permissions");
-#else
 	ret = fuse_opt_add_arg(&args, "-odefault_permissions");
-#endif
 	if (ret < 0) {
 		/* Could not enable FUSE option */
 		ltfsmsg(LTFS_ERR, "14001E", "default_permissions", ret);
@@ -788,30 +729,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-#ifdef __APPLE__
-    /* Change MacFUSE timeout from 60 secs to 3100 secs (41mins) */
-    /* 3100 secs comes from the timeout value of locate/space, it is the most longest timeout value  */
-    /* in the commands used by LTFS. Actually the timeout value of locate/space is 2500 secs,        */
-    /* we set the MacFUSE as the timeout value of locate/space + 10 mins. Because MacFUSE timeout    */
-    /* should come after the drive command timeout.                                                  */
-	fuse_opt_add_arg(&args, "-odaemon_timeout=3100");
-	if (ret < 0) {
-		/* Could not enable FUSE option */
-		ltfsmsg(LTFS_ERR, "14001E", "daemon_timeout", ret);
-		return 1;
-	}
-	/*
-	 *  Disable vnode cache to return correct owner.
-	 *  LTFS will return the owner as accessed user, vnode cache will return previous user
-	 *  when the cache is hot.
-	 */
-	fuse_opt_add_arg(&args, "-onovncache");
-	if (ret < 0) {
-		/* Could not enable FUSE option */
-		ltfsmsg(LTFS_ERR, "14001E", "novncache", ret);
-		return 1;
-	}
-#endif
 
 #if FUSE_VERSION >= 28
 	/* For FUSE 2.8 or higher, automatically enable big_writes */
@@ -878,9 +795,6 @@ int main(int argc, char **argv)
 	 * If exactly one param, check if it's an accessible directory.
 	 * With more than one param, have to defer to fuse_main to find if valid.
 	 */
-#ifndef HPE_mingw_BUILD
-	struct stat mpstatbuf;
-#endif /* HPE_mingw_BUILD */
 	if (argc < 2) {
 		ltfsmsg(LTFS_ERR, "14200E");  /* missing mountpoint parameter */
 		usage (argv[0], priv);
@@ -892,21 +806,6 @@ int main(int argc, char **argv)
 	 * In our MinGW environment, the mount point does not exist when
 	 * the file system is executed
 	 */
-#ifndef HPE_mingw_BUILD
-	if (argc == 2) {
-		ret = stat(argv[1], &mpstatbuf);
-		if (ret < 0) {
-			/* Path does not exist */
-			ltfsmsg(LTFS_ERR, "14201E", argv[1]);
-			return 1;
-
-		} else if (! S_ISDIR(mpstatbuf.st_mode)) {
-			/* Path exists but is not a directory */
-			ltfsmsg(LTFS_ERR, "14201E", argv[1]);
-			return 1;
-		}
-	}
-#endif /* HPE_mingw_BUILD */
 
 	/* Make sure work directory exists */
 	ret = create_workdir(priv);
@@ -994,19 +893,14 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	char *index_rules_utf8;
 	char fsname[strlen(priv->devname) + 16];
 	char *invalid_start;
-#ifdef __APPLE__
-	char *opt_volname = NULL;
-#endif
 	char *mountpoint = NULL;
 	struct fuse_args tmpa=FUSE_ARGS_INIT(0, NULL);
 	int i;
 	bool is_worm;
 	
-#ifdef HPE_mingw_BUILD
 	(void) i;
 	(void) tmpa;
 	(void) mountpoint;
-#endif /* HPE_mingw_BUILD */
 
 	/*  Setup signal handler to terminate cleanly */
 	ret = ltfs_set_signal_handlers();
@@ -1101,211 +995,13 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		ltfs_volume_free(&priv->data);
 		return 0;
 	}
-
-	/* Parse backend options */
-	if (ltfs_parse_tape_backend_opts(args, priv->data)) {
-		/* Backend option parsing failed */
-		ltfsmsg(LTFS_ERR, "14012E");
-		ltfs_volume_free(&priv->data);
-		return 1;
-	}
-
-	if (priv->kmi_backend_name) {
-		if (kmi_init(&priv->kmi_plugin, priv->data) < 0) {
-			/* Encryption function disabled. */
-			ltfsmsg(LTFS_ERR, "14089E");
-			ltfs_volume_free(&priv->data);
-			return 1;
-		}
-
-		if (ltfs_parse_kmi_backend_opts(args, priv->data)) {
-			/* Backend option parsing failed */
-			ltfsmsg(LTFS_ERR, "14090E");
-			ltfs_volume_free(&priv->data);
-			return 1;
-		}
-
-		if (tape_clear_key(priv->data->device, priv->data->kmi_handle) < 0)
-			return 1;
-	}
-
-	/* Setup tape drive */
-	priv->data->append_only_mode = (bool)priv->append_only_mode;
-	if (ltfs_setup_device(priv->data)) {
-		ltfsmsg(LTFS_ERR, "14075E");
-		ltfs_volume_free(&priv->data);
-		return 1;
-	}
-
-	/* Check EOD validation is skipped or not */
-	if (priv->skip_eod_check) {
-		ltfsmsg(LTFS_INFO, "14076I");
-		ltfsmsg(LTFS_INFO, "14077I");
-		ltfs_set_eod_check(! priv->skip_eod_check, priv->data);
-	}
-
-	/* Validate symbolic link type */
-	priv->data->livelink = false;
-	if (priv->symlink_str) {
-		if (strcasecmp(priv->symlink_str, "live") == 0)
-			priv->data->livelink = true;
-		else if (strcasecmp(priv->symlink_str, "posix") == 0)
-			priv->data->livelink = false;
-		else {
-			ltfsmsg(LTFS_ERR, "14093E", priv->symlink_str);
-			return 1;
-		}
-		ltfsmsg(LTFS_INFO, "14092I", priv->symlink_str);
-	}
-
-	/* Mount the volume */
-	ltfs_set_traverse_mode(TRAVERSE_BACKWARD, priv->data);
-	if ((ret = ltfs_mount(false, false, false, false, priv->rollback_gen, priv->data)) < 0) {
-		/*
-		 * If mount fails then we need to see if the Write Error flag is set in the MAM
-		 * and then try to mount the volume as read-only with the latest index considering both partitions
-		 *
-		 * HPE MD 25.09.2017 Added DPPWE and IPPWE to support SNIA 2.4 if either flag is set they will all
-		 * try and use a valid index from any partition.
-		 */
-		if (priv->data->mam_attr.volumelockstate == PWE_MAM) 
-		{
-			ltfsmsg(LTFS_INFO, "14481I");
-			if (ltfs_mount_latest_index_either_partition(priv->data)) 
-			{
-				/* If the Write Error flag is set in the MAM but no valid index is found from either partition */
-				ltfsmsg(LTFS_ERR, "14482E");
-				return 1;
-			}
-		} 
-        else if (priv->data->mam_attr.volumelockstate == DPPWE_MAM)
-        {
-            ltfsmsg(LTFS_INFO, "14483I");
-            if (ltfs_mount_latest_index_either_partition(priv->data))
-            {
-                /* If the Data Partition Write Error flag is set in the MAM but no valid index is found from either partition */
-                ltfsmsg(LTFS_ERR, "14484E");
-                return 1;
-            }
-
-        }
-        else if (priv->data->mam_attr.volumelockstate == IPPWE_MAM)
-        {
-            ltfsmsg(LTFS_INFO, "14485I");
-            if (ltfs_mount_latest_index_either_partition(priv->data))
-            {
-                /* If the Index Partition Write Error flag is set in the MAM but no valid index is found from either partition */
-                ltfsmsg(LTFS_ERR, "14486E");
-                return 1;
-            }
-
-        }
-        else if (priv->data->mam_attr.volumelockstate == DP_IP_PWE_MAM)
-        {
-            ltfsmsg(LTFS_INFO, "14487I");
-            if (ltfs_mount_latest_index_either_partition(priv->data))
-            {
-                /* If the Index Partition Write Error flag is set in the MAM but no valid index is found from either partition */
-                ltfsmsg(LTFS_ERR, "14488E");
-                return 1;
-            }
-
-        }
-		else 
-		{
-			ltfsmsg(LTFS_ERR, "14013E");
-			ltfs_volume_free(&priv->data);
-			return 1;
-		}
-	}
-
-	ret = tape_get_worm_status(priv->data->device, &is_worm);
-	if (ret != 0 || is_worm) {
-		ltfsmsg(LTFS_ERR, "14116E", ret);
-		ltfs_volume_free(&priv->data);
-		return 1;
-	}
-
-	/* Set up index criteria */
-	if (priv->index_rules) {
-		ret = pathname_format(priv->index_rules, &index_rules_utf8, false, false);
-		if (ret < 0) {
-			/* Could not format data placement rules. */
-			ltfsmsg(LTFS_ERR, "14016E", ret);
-			ltfs_volume_free(&priv->data);
-			return 1;
-		}
-		ret = ltfs_override_policy(index_rules_utf8, false, priv->data);
-		free(index_rules_utf8);
-		if (ret == -LTFS_POLICY_IMMUTABLE) {
-			/* Volume doesn't allow override. Ignoring user-specified criteria. */
-			ltfsmsg(LTFS_WARN, "14015W");
-		} else if (ret < 0) {
-			/* Could not parse data placement rules */
-			ltfsmsg(LTFS_ERR, "14017E", ret);
-			ltfs_volume_free(&priv->data);
-			return 1;
-		}
-	}
-
-	/* Configure I/O scheduler cache */
-	ltfs_set_scheduler_cache(priv->min_pool_size, priv->max_pool_size, priv->data);
-
-	/* mount read-only if underlying medium is write-protected */
-	ret = ltfs_get_tape_readonly(priv->data);
-	if (ret < 0 && ret != -LTFS_WRITE_PROTECT && ret != -LTFS_WRITE_ERROR && ret != -LTFS_NO_SPACE &&
-		ret != -LTFS_LESS_SPACE) { /* No other errors are expected. */
-		/* Could not get read-only status of medium */
-		ltfsmsg(LTFS_ERR, "14018E");
-		ltfs_volume_free(&priv->data);
-		return 1;
-	} else if (ret == -LTFS_WRITE_PROTECT || ret == -LTFS_WRITE_ERROR || ret == -LTFS_NO_SPACE || ret == -LTFS_LESS_SPACE || priv->rollback_gen != 0) {
-		if (ret == -LTFS_WRITE_PROTECT || ret == -LTFS_WRITE_ERROR || ret == -LTFS_NO_SPACE) {
-			ret = ltfs_get_partition_readonly(ltfs_ip_id(priv->data), priv->data);
-			if (ret == -LTFS_WRITE_PROTECT || ret == -LTFS_WRITE_ERROR) {
-				if (priv->data->rollback_mount) {
-					/* The cartridge will be mounted as read-only if a valid generation number is supplied with
-					 * rollback_mount
-					 */
-					ltfsmsg(LTFS_INFO, "14072I", priv->rollback_gen);
-				} else {
-					if (ltfs_get_tape_logically_readonly(priv->data) == -LTFS_LOGICAL_WRITE_PROTECT) {
-						/* The tape is logically write protected i.e. incompatible medium*/
-						ltfsmsg(LTFS_INFO, "14118I");
-					}else {
-						/* The tape is really write protected */
-						ltfsmsg(LTFS_INFO, "14019I");
-					}
-				}
-			} else if (ret == -LTFS_NO_SPACE) {
-				/* The index partition is in early warning zone. To be mounted read-only */
-				ltfsmsg(LTFS_INFO, "14073I");
-			} else { /* 0 or -LTFS_LESS_SPACE */
-				/* The data partition may be in early warning zone. To be mounted read-only */
-				ltfsmsg(LTFS_INFO, "14074I");
-			}
-		} else if (ret == -LTFS_LESS_SPACE)
-			ltfsmsg(LTFS_INFO, "14071I");
-		/*else
-			ltfsmsg(LTFS_INFO, "14072I", priv->rollback_gen);*/
-
-		ret = fuse_opt_add_arg(args, "-oro");
-		if (ret < 0) {
-			/* Could not set FUSE option */
-			ltfsmsg(LTFS_ERR, "14001E", "ro", ret);
-			ltfs_volume_free(&priv->data);
-			return 1;
-		}
-	}
-
-#else
+#endif /* HPE_mingw_BUILD */
 	/* OSR */
 	/* Save the arguments so we can parse them later at the init
 	 * callback
 	 */
 	priv->args = args;
 
-#endif /* HPE_mingw_BUILD */
 
 	/*  Cleanup signal handler */
 	ret = ltfs_unset_signal_handlers();
@@ -1314,63 +1010,14 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 		return 1;
 	}
 
-#ifdef __APPLE__
-	/*
-	 *  Set the volume name (logical) when LTFS runs on OS X
-	 */
-	if (priv->data->index->volume_name) {
-		ret = asprintf(&opt_volname, "-ovolname=%s(%s)", priv->data->index->volume_name, "ltfs");
-		if (ret < 0) {
-			/* Memory allocation failed */
-			ltfsmsg(LTFS_ERR, "10001E", "option string for volume name");
-			ltfs_volume_free(&priv->data);
-			return 1;
-		}
-
-		ret = fuse_opt_add_arg(args, opt_volname);
-		if (ret < 0) {
-			/* Could not set FUSE option */
-			ltfsmsg(LTFS_ERR, "14001E", "volname", ret);
-			ltfs_volume_free(&priv->data);
-			free(opt_volname);
-			return 1;
-		}
-	}
-#endif /* __APPLE__ */
 
 	/* Not supported on Windows. TODO: Verify this again.*/
-#ifndef HPE_mingw_BUILD
-	/* Get and store mount point */
-	for ( i=0; i<args->argc; i++) {
-		fuse_opt_add_arg(&tmpa, args->argv[i]);
-	}
-	ret = fuse_parse_cmdline( &tmpa, &mountpoint, NULL, NULL);
-	fuse_opt_free_args(&tmpa);
-	if (ret < 0 || mountpoint == NULL) {
-		ltfsmsg(LTFS_ERR, "14094E", ret);
-		ltfs_volume_free(&priv->data);
-		return 1;
-	}
-	priv->data->mountpoint = mountpoint;
-	priv->data->mountpoint_len = strlen(mountpoint);
-#endif /* HPE_mingw_BUILD */
 
-#ifndef HPE_mingw_BUILD
-	/* Let us check the volumelockstate and update the bitfield */
-	ltfs_update_volumelockstate(priv->data);
 
-	/* Let us check if Archive Manager tape and mount it as readonly */
-	ret = ltfs_set_archivemanager_media_readonly(priv->data);
-	if (ret == 1)
-		ltfsmsg(LTFS_INFO, "17351I");
-#endif /* HPE_mingw_BUILD */
-
-#ifdef mingw_PLATFORM
 	/* A cached EA must not outlive a media change, even for CLI mounts. */
 	ret = fuse_opt_add_arg(args, "-oEaTimeout=0");
 	if (ret < 0)
 		return 1;
-#endif
 
 	/* now we can safely call FUSE */
 	ltfsmsg(LTFS_INFO, "14111I");
@@ -1393,22 +1040,9 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	 * ltfs_fuse_unmount
 	 *
 	 */
-#ifndef HPE_mingw_BUILD
-	if (priv->eject)
-		ltfs_eject_tape(priv->data);
-
-	ltfs_device_close(priv->data);
-#endif /* HPE_mingw_BUILD */
 
 	/* close the volume */
-#ifdef __APPLE__
-	if (opt_volname)
-		free(opt_volname);
-#endif /* __APPLE__ */
 
-#ifndef HPE_mingw_BUILD
-	ltfs_volume_free(&priv->data);
-#endif /* HPE_mingw_BUILD */
 
 	ltfs_unset_signal_handlers();
 
