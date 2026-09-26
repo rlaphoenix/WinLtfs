@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Identify as WinLtfs 1.2.0 instead of HPE StoreOpen 3.5.0 in tape labels, indexes, the cartridge memory
   (Application Vendor/Version), the `ltfs.software*` attributes, and startup logs.
+- Default config file moved from `C:\ProgramData\HPE\LTFS\ltfs.conf` to `C:\ProgramData\WinLtfs\ltfs.conf`,
+  so an installed HPE StoreOpen config (pointing at HPE's plugins) is never picked up by accident.
 
 ## [1.2.0] - 2026-09-25
 
