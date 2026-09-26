@@ -160,37 +160,13 @@ struct device_data;
 
 #include "config.h"
 
-#ifdef HPE_BUILD
 #define PACKAGE_OWNER                 "WinLtfs"
 #define LTFS_VENDOR_NAME              "WinLtfs "
 #define SOFTWARE_PRODUCT_NAME         "LTFS"
-#elif defined QUANTUM_BUILD
-#define PACKAGE_OWNER                 "QUANTUM LTFS"
-#define LTFS_VENDOR_NAME              "QUANTUM "
-#define SOFTWARE_PRODUCT_NAME         "LTFS Software"
-#elif defined GENERIC_OEM_BUILD
-#define PACKAGE_OWNER                 "LTFS"
-#define LTFS_VENDOR_NAME              ""
-#define SOFTWARE_PRODUCT_NAME         "LTFS"
-#else
-#define PACKAGE_OWNER                 "IBM LTFS"
-#define LTFS_VENDOR_NAME              "IBM "
-#define SOFTWARE_PRODUCT_NAME         "LTFS SDE"
-#endif
 
 
 #define LTFS_LOSTANDFOUND_DIR         "_ltfs_lostandfound"
 
-#if 0
-#ifdef GENERIC_OEM_BUILD
-#undef PACKAGE_OWNER
-#define PACKAGE_OWNWER               "LTFS"
-#undef LTFS_VENDOR_NAME
-#define LTFS_VENDOR_NAME             "LTFS"
-#undef SOFTWARE_PRODUCT_NAME
-#define SOFTWARE_PRODUCT_NAME        "LTFS Software"
-#endif
-#endif
 #define LTFS_LIVELINK_EA_NAME         "ltfs.vendor.IBM.prefixLength"
 
 #define BYTE_MULTIPLIER					(1024 * 1024 * 1024)

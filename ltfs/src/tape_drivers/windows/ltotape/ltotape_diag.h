@@ -67,11 +67,7 @@
 /*
  *  Definitions
  */
-#ifdef HPE_BUILD
 # define HPLTFS_COPYRIGHT   "Portions (C) Copyright 2015, 2016 Hewlett Packard Enterprise Development LP"
-#elif defined QUANTUM_BUILD
-# define QTMLTFS_COPYRIGHT   "Portions copyright (c) 2010-2011 Quantum Corporation"
-#endif
 
 #define KB   (1024)
 #define MB   (KB * 1024)

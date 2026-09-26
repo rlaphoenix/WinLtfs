@@ -46,13 +46,7 @@
 #include "ltfs_copyright.h"
 #include "ltfsprintf.h"
 
-#ifdef HPE_BUILD
 volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n"HPLTFS_COPYRIGHT"\n";
-#elif defined QUANTUM_BUILD
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n"QTMLTFS_COPYRIGHT"\n";
-#elif defined GENERIC_OEM_BUILD
-volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n";
-#endif
 
 /*
  * External function declaration (found in ltotape.c)
@@ -166,36 +160,6 @@ int ltotape_log_snapshot (void *device, int minidump)
 	time(&now);
 	tm_now = localtime(&now);
 
-#ifdef QUANTUM_BUILD
-	if ( sio->drive_vendor_id == drivevendor_hp ) {
-		sprintf (fname, "%s/ltfs_%04d%02d%02d_%02d%02d%02d_%s.ltd", 
-			 dirname,
-			 tm_now->tm_year + 1900,
-			 tm_now->tm_mon + 1,
-			 tm_now->tm_mday,
-			 tm_now->tm_hour,
-			 tm_now->tm_min,
-			 tm_now->tm_sec,
-			 sio->serialno);
-
-  } else if (sio->drive_vendor_id == drivevendor_quantum) {
-		sprintf (fname, "%s/ltfs_%04d%02d%02d_%02d%02d%02d_%s.svm", 
-			 dirname,
-			 tm_now->tm_year + 1900,
-			 tm_now->tm_mon + 1,
-			 tm_now->tm_mday,
-			 tm_now->tm_hour,
-			 tm_now->tm_min,
-			 tm_now->tm_sec,
-			 sio->serialno);
-
-	} else  { // Drive vendor unknown
-	  /* "Unable to save drive dump to file"
-          */
-	  ltfsmsg(LTFS_WARN, "20079W" );
-	  return -2;
-	}
-#else
 	sprintf (fname, "%s/ltfs_%04d%02d%02d_%02d%02d%02d_%s.ltd", 
 		 dirname,
 		 tm_now->tm_year + 1900,
@@ -205,7 +169,6 @@ int ltotape_log_snapshot (void *device, int minidump)
 		 tm_now->tm_min,
 		 tm_now->tm_sec,
 		 sio->serialno);
-#endif
 
 /*
  * Trigger a log snapshot, then read and store the log. Note that the way
@@ -373,13 +336,7 @@ static int ltotape_read_drivedump (void *device, const char *fname)
 	time_t               now;
 	int                  j;
 
-#ifdef HPE_BUILD
 	const char*          lsn = "WinLtfs                          ";
-#elif defined QUANTUM_BUILD
-	const char*          lsn = "Quantum LTFS                    ";
-#elif defined GENERIC_OEM_BUILD
-	const char*          lsn = "Generic LTFS                    ";
-#endif
 
 
 	/* Set transfer size */
@@ -554,13 +511,7 @@ static int ltotape_read_mini_drivedump (void *device, const char *fname)
 	time_t               now;
 	int                  j;
 
-#ifdef HPE_BUILD
 	const char*          lsn = "WinLtfs                          ";
-#elif defined QUANTUM_BUILD
-	const char*          lsn = "Quantum LTFS                    ";
-#elif defined GENERIC_OEM_BUILD
-	const char*          lsn = "Generic LTFS                    ";
-#endif
 
 	/* Set transfer size */
 	transfer_size = MINI_DUMP_TRANSFER_SIZE;
@@ -745,13 +696,7 @@ static int ltotape_read_snapshot (void* device, char* fname)
 	int                  j;
 	FILE*                fp;
 	time_t               now;
-#ifdef HPE_BUILD
 	const char*          lsn = "WinLtfs                          ";
-#elif defined QUANTUM_BUILD
-	const char*          lsn = "Quantum LTFS                    ";
-#elif defined GENERIC_OEM_BUILD
-  const char*          lsn = "Generic LTFS                    ";
-#endif
 
 /*
  * Try to get some memory for the snapshot:

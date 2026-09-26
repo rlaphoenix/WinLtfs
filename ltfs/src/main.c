@@ -372,13 +372,7 @@ int ltfs_parse_options(void *priv_data, const char *arg, int key, struct fuse_ar
 
 	switch(key) {
 		case KEY_VERSION:
-#ifdef HPE_BUILD
 			ltfsresult("14464I", LTFS_VENDOR_NAME SOFTWARE_PRODUCT_NAME, PACKAGE_VERSION, LTFS_BUILD_VERSION);
-#elif defined QUANTUM_BUILD
-			ltfsresult("14058I", "QUANTUM "PACKAGE_NAME" standalone", PACKAGE_VERSION);
-#else
-			ltfsresult("14464I", PACKAGE_NAME, PACKAGE_VERSION, LTFS_BUILD_VERSION);
-#endif
 			ltfsresult("14058I", "LTFS Format Specification", LTFS_INDEX_VERSION_STR);
 			exit(0);
 		case KEY_ADVANCED_HELP:

@@ -24,7 +24,7 @@ do_filedebug() {
     cd "$SRC/src/tape_drivers/generic/file"
     x86_64-w64-mingw32-gcc -shared -o libdriver-file.dll filedebug_tc.c \
         -DHAVE_CONFIG_H -I"$SRC" -I"$SRC/src" \
-        -D_GNU_SOURCE -DGENERIC_OEM_BUILD -Dmingw_PLATFORM=1 -DHP_mingw_BUILD=1 \
+        -D_GNU_SOURCE -Dmingw_PLATFORM=1 -DHP_mingw_BUILD=1 \
         -DHPE_mingw_BUILD=1 -D_FILE_OFFSET_BITS=64 \
         -DWINVER=0x0601 -D_WIN32_WINNT=0x0601 \
         -I"$ROOT/build/wfsp/inc/fuse" $(pkg-config --cflags libxml-2.0 icu-uc) \

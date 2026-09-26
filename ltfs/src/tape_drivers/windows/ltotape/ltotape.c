@@ -2357,24 +2357,7 @@ static int ltotape_set_MAMattributes (void* device, TC_FORMAT_TYPE format, const
 
                 } else {
                         buf[4] = LTOATTRIB_APPLICATION_VENDOR_LEN;
-#ifdef HPE_BUILD
                         memcpy(buf + 5, LTFS_VENDOR_NAME, strlen(LTFS_VENDOR_NAME));
-#elif defined QUANTUM_BUILD
-                        buf[5] = (unsigned char) 'Q';
-                        buf[6] = (unsigned char) 'U';
-                        buf[7] = (unsigned char) 'A';
-                        buf[8] = (unsigned char) 'N';
-                        buf[9] = (unsigned char) 'T';
-                        buf[10] = (unsigned char) 'U';
-                        buf[11] = (unsigned char) 'M';
-#elif defined GENERIC_OEM_BUILD
-                        buf[5] = (unsigned char) 'L';
-                        buf[6] = (unsigned char) 'T';
-                        buf[7] = (unsigned char) 'F';
-                        buf[8] = (unsigned char) 'S';
-#else
-# error "No Application Vendor defined!"
-#endif
                         len = LTOATTRIB_APPLICATION_VENDOR_LEN + ATTRIB_HEADER_LEN;
                 }
                 status = ltotape_write_attribute (device, (const tape_partition_t)0, buf, len);
@@ -2638,24 +2621,7 @@ static int ltotape_set_MAMattributes (void* device, TC_FORMAT_TYPE format, const
 
                 } else {
                         buf[4] = LTOATTRIB_APPLICATION_VENDOR_LEN;
-#ifdef HPE_BUILD
                         memcpy(buf + 5, LTFS_VENDOR_NAME, strlen(LTFS_VENDOR_NAME));
-#elif defined QUANTUM_BUILD
-                        buf[5] = (unsigned char) 'Q';
-                        buf[6] = (unsigned char) 'U';
-                        buf[7] = (unsigned char) 'A';
-                        buf[8] = (unsigned char) 'N';
-                        buf[9] = (unsigned char) 'T';
-                        buf[10] = (unsigned char) 'U';
-                        buf[11] = (unsigned char) 'M';
-#elif defined GENERIC_OEM_BUILD
-                        buf[5] = (unsigned char) 'L';
-                        buf[6] = (unsigned char) 'T';
-                        buf[7] = (unsigned char) 'F';
-                        buf[8] = (unsigned char) 'S';
-#else
-# error "No Application Vendor defined!"
-#endif
                         len = LTOATTRIB_APPLICATION_VENDOR_LEN + ATTRIB_HEADER_LEN;
                 }
                 status = ltotape_write_attribute(device, (const tape_partition_t) 0, buf, len);

@@ -482,11 +482,6 @@ void ltfs_device_close_skip_append_only_mode(struct ltfs_volume *vol)
  */
 int ltfs_setup_device(struct ltfs_volume *vol)
 {
-#ifdef QUANTUM_BUILD
-	// Quantum's V3085 firmware doesn't support device configuration extension mode page 
-	// 10h subpage 01h or append-only mode
-	return 0;
-#else
 	int ret;
 	bool enabled;
 
@@ -525,7 +520,6 @@ int ltfs_setup_device(struct ltfs_volume *vol)
 	}
 
 	return ret;
-#endif /* QUANTUM_BUILD */
 }
 
 /**
@@ -2214,7 +2208,6 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	immed = (strcmp(reason, SYNC_FORMAT) == 0);
 	ret = tape_write_filemark(vol->device, 1, true, true, immed);
 
-#if (defined HPE_BUILD) || (defined QUANTUM_BUILD) || (defined GENERIC_OEM_BUILD)
 	/*
 	 * Write 0 filemarks to flush the buffer to tape, to ensure that the
 	 *  Volume Change Reference value has been updated before we update the
@@ -2223,7 +2216,6 @@ int ltfs_write_index(char partition, char *reason, struct ltfs_volume *vol)
 	 */
 	if (! ret)
 		ret = tape_write_filemark (vol->device, 0, true, true, immed);
-#endif
 
 	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, "11084E", ret);
@@ -3918,9 +3910,6 @@ void ltfs_recover_eod_simple(struct ltfs_volume *vol)
 
 	if (corrupted) {
 	/* HPE Change - the unload is unnecessary with our drive and also causes problems */
-#if !(defined(HPE_BUILD) || defined(GENERIC_OEM_BUILD) || defined(QUANTUM_BUILD))
-		tape_unload_tape(vol->device);
-#endif
 		tape_load_tape(vol->device, vol->kmi_handle);
 	}
 
