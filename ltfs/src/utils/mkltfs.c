@@ -453,7 +453,6 @@ int main(int argc, char **argv)
 	ltfs_set_syslog_level(syslog_level);
 
 	/* Starting mkltfs */
-	ltfsmsg(LTFS_INFO, "15059I", "WinLtfs", WINLTFS_VERSION);
 	ltfsmsg(LTFS_INFO, "15000I", LTFS_VENDOR_NAME SOFTWARE_PRODUCT_NAME, PACKAGE_VERSION, log_level);
 
 	/* Show command line arguments */

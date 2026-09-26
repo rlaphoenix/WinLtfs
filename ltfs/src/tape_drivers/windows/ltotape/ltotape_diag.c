@@ -385,7 +385,7 @@ static int ltotape_read_drivedump (void *device, const char *fname)
 	int                  j;
 
 #ifdef HPE_BUILD
-	const char*          lsn = "HPE LTFS                         ";
+	const char*          lsn = "WinLtfs                          ";
 #elif defined QUANTUM_BUILD
 	const char*          lsn = "Quantum LTFS                    ";
 #elif defined GENERIC_OEM_BUILD
@@ -566,7 +566,7 @@ static int ltotape_read_mini_drivedump (void *device, const char *fname)
 	int                  j;
 
 #ifdef HPE_BUILD
-	const char*          lsn = "HPE LTFS                         ";
+	const char*          lsn = "WinLtfs                          ";
 #elif defined QUANTUM_BUILD
 	const char*          lsn = "Quantum LTFS                    ";
 #elif defined GENERIC_OEM_BUILD
@@ -757,7 +757,7 @@ static int ltotape_read_snapshot (void* device, char* fname)
 	FILE*                fp;
 	time_t               now;
 #ifdef HPE_BUILD
-	const char*          lsn = "HPE LTFS                         ";
+	const char*          lsn = "WinLtfs                          ";
 #elif defined QUANTUM_BUILD
 	const char*          lsn = "Quantum LTFS                    ";
 #elif defined GENERIC_OEM_BUILD

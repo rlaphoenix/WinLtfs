@@ -2368,9 +2368,7 @@ static int ltotape_set_MAMattributes (void* device, TC_FORMAT_TYPE format, const
                 } else {
                         buf[4] = LTOATTRIB_APPLICATION_VENDOR_LEN;
 #ifdef HPE_BUILD
-                        buf[5] = (unsigned char) 'H';
-                        buf[6] = (unsigned char) 'P';
-                        buf[7] = (unsigned char) 'E';
+                        memcpy(buf + 5, LTFS_VENDOR_NAME, strlen(LTFS_VENDOR_NAME));
 #elif defined QUANTUM_BUILD
                         buf[5] = (unsigned char) 'Q';
                         buf[6] = (unsigned char) 'U';
@@ -2651,9 +2649,7 @@ static int ltotape_set_MAMattributes (void* device, TC_FORMAT_TYPE format, const
                 } else {
                         buf[4] = LTOATTRIB_APPLICATION_VENDOR_LEN;
 #ifdef HPE_BUILD
-                        buf[5] = (unsigned char) 'H';
-                        buf[6] = (unsigned char) 'P';
-                        buf[7] = (unsigned char) 'E';
+                        memcpy(buf + 5, LTFS_VENDOR_NAME, strlen(LTFS_VENDOR_NAME));
 #elif defined QUANTUM_BUILD
                         buf[5] = (unsigned char) 'Q';
                         buf[6] = (unsigned char) 'U';

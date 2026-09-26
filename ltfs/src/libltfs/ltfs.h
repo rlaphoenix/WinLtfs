@@ -187,9 +187,9 @@ struct device_data;
 #endif
 
 #ifdef HPE_BUILD
-#define PACKAGE_OWNER                 "HPE LTFS"
-#define LTFS_VENDOR_NAME              "HPE "
-#define SOFTWARE_PRODUCT_NAME         "StoreOpen Software"
+#define PACKAGE_OWNER                 "WinLtfs"
+#define LTFS_VENDOR_NAME              "WinLtfs "
+#define SOFTWARE_PRODUCT_NAME         "LTFS"
 #elif defined QUANTUM_BUILD
 #define PACKAGE_OWNER                 "QUANTUM LTFS"
 #define LTFS_VENDOR_NAME              "QUANTUM "
@@ -204,7 +204,6 @@ struct device_data;
 #define SOFTWARE_PRODUCT_NAME         "LTFS SDE"
 #endif
 
-#define WINLTFS_VERSION               "1.2.0"
 
 #define LTFS_LOSTANDFOUND_DIR         "_ltfs_lostandfound"
 
