@@ -533,7 +533,6 @@ int main(int argc, char **argv)
 
 	/* Suppress warning on Windows builds. */
 	(void) lang;
-	(void) mount_options;
 
 	priv->verbose = LTFS_INFO;
 	priv->allow_other = (geteuid() == 0) ? 1 : 0;
@@ -601,9 +600,9 @@ int main(int argc, char **argv)
 #endif /* 0 */
 		}
 	}
-	
-	/* Not supported on Windows. TODO: Verify this again.*/
-	/* Bring in extra mount options set in the config file */
+
+	/* Bring in extra mount options set in the config file ("option single-drive <opt>").
+	 * They are inserted before the command line options, so the command line wins. */
 	mount_options = config_file_get_options("single-drive", priv->config);
 	if (! mount_options)
 		return 1;
