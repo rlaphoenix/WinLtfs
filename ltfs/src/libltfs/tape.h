@@ -209,17 +209,6 @@ const char *tape_get_drive_encryption_method(struct device_data *dev);
 int tape_get_worm_status(struct device_data *dev, bool *is_worm);
 int tape_get_physically_write_protected(struct device_data *dev);
 
-/* Separate implementation for MAM attributes exist. */
-#if 0
-void set_tape_attribute(struct ltfs_volume *vol, struct tape_attr *t_attr);
-int tape_set_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr, int type);
-int tape_format_attribute_to_cm(struct device_data *dev, struct tape_attr *t_attr);
-int tape_get_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr, int type);
-void tape_load_all_attribute_from_cm(struct device_data *dev, struct tape_attr *t_attr);
-int update_tape_attribute (struct ltfs_volume *vol, const char *new_value, int type, int size);
-int read_tape_attribute (struct ltfs_volume *vol, char **val, const char *name);
-#endif /* 0 */
-
 int tape_get_MAMattributes(struct device_data *dev, unsigned int attribute_id, const tape_partition_t part,
 		struct tc_mam_attr *mam_attr);
 int tape_update_mam_attributes(struct device_data *device,
