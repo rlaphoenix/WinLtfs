@@ -2282,21 +2282,6 @@ int ltfs_save_index_to_disk(const char *work_dir, char * reason, bool need_gen, 
 	CHECK_ARG_NULL(vol->label, -LTFS_NULL_ARG);
 
 	/* Write the schema to a file on disk */
-#if 0
-	ltfsmsg(LTFS_DEBUG, "17182D", vol->label->vol_uuid, vol->label->barcode);
-	if (need_gen) {
-		if (strcmp(vol->label->barcode, "      "))
-			ret = asprintf(&path, "%s/%s-%d.schema", work_dir, vol->label->barcode, vol->index->generation);
-		else
-			ret = asprintf(&path, "%s/%s-%d.schema", work_dir, vol->label->vol_uuid, vol->index->generation);
-	} else {
-		if (strcmp(vol->label->barcode, "      "))
-			ret = asprintf(&path, "%s/%s.schema", work_dir, vol->label->barcode);
-		else
-			ret = asprintf(&path, "%s/%s.schema", work_dir, vol->label->vol_uuid);
-	}
-#endif /* 0 */
-	
 	ltfsmsg(LTFS_DEBUG, "17182D", vol->label->vol_uuid, vol->mam_attr.barcode);
 
 	if (vol->mam_attr.barcode) {

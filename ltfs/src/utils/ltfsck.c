@@ -896,19 +896,6 @@ struct index_info* _add_list(struct index_info *new, struct index_info *list)
 	return ret;
 }
 
-#if 0
-void _store_index(struct index_info *dst, struct ltfs_index *src)
-{
-	dst->generation = src->generation;
-	dst->mod_time   = src->mod_time;
-	dst->selfptr    = src->selfptr;
-	dst->backptr    = src->backptr;
-	if(src->commit_message)
-		dst->commit_message= strdup(src->commit_message);
-	dst->next       = NULL;
-}
-#endif
-
 void destroy_index_array(struct index_info *list)
 {
 	struct index_info *next, *cur;
