@@ -211,31 +211,6 @@ typedef enum {
 #define TC_MAM_PAGE_COHERENCY      (0x080C)
 #define TC_MAM_PAGE_COHERENCY_SIZE (0x46)
 
-/* Separate implementation for MAM attributes exist. */
-#if 0
-#define TC_MAM_APP_VENDER          (0x0800)
-#define TC_MAM_APP_VENDER_SIZE     (0x8)
-#define TC_MAM_APP_NAME  (0x0801)
-#define TC_MAM_APP_NAME_SIZE (0x20)
-#define TC_MAM_APP_VERSION (0x0802)
-#define TC_MAM_APP_VERSION_SIZE (0x8)
-#define TC_MAM_USER_MEDIUM_LABEL (0x0803)
-#define TC_MAM_USER_MEDIUM_LABEL_SIZE (0xA0)
-#define TC_MAM_TEXT_LOCALIZATION_IDENTIFIER (0x0805)
-#define TC_MAM_TEXT_LOCALIZATION_IDENTIFIER_SIZE (0x1)
-#define TC_MAM_BARCODE (0x0806)
-#define TC_MAM_BARCODE_SIZE (0x20)
-#define TC_MAM_APP_FORMAT_VERSION (0x080B)
-#define TC_MAM_APP_FORMAT_VERSION_SIZE (0x10)
-#endif /* 0 */
-
-#define BINARY_FORMAT (0x0)
-#define ASCII_FORMAT (0x1)
-#define TEXT_FORMAT (0x2)
-
-#define TEXT_LOCALIZATION_IDENTIFIER_ASCII (0x0)
-#define TEXT_LOCALIZATION_IDENTIFIER_UTF8 (0x81)
-
 #define TC_MAM_PAGE_ATTRIBUTE_ALL   0 /* Page code for all the attribute passed while formatting and mounting the volume */
 
 #define TC_MAM_PAGE_APP_NAME       (0x0801) /* Page code of Application Name */

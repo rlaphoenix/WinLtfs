@@ -769,23 +769,6 @@ int format_tape(struct ltfs_volume *vol, struct other_format_opts *opt, void *ar
 	ltfsmsg(LTFS_INFO, "15019I", (unsigned long long)LTFS_CALC_VOLUME_SIZE(cap.total_dp,
 													opt->blocksize, BYTE_MULTIPLIER));
 
-/* Separate implementation for MAM attributes exist. */													  
-#if 0													  
-	vol->t_attr = (struct tape_attr *) calloc(1, sizeof(struct tape_attr));
-	if (! vol->t_attr) {
-		ltfsmsg(LTFS_ERR, "10001E", "format_tape: vol->t_attr");
-		goto out_close;
-	}
-
-	/* set Tape Attribute to vol->t_attr */
-	set_tape_attribute(vol, vol->t_attr);
-
-	ret = tape_format_attribute_to_cm(vol->device, vol->t_attr);
-	if (ret < 0) {
-		free(vol->t_attr);
-		ltfsmsg(LTFS_ERR, "15058E", "format_tape");
-	}
-#endif /* 0 */
 	ret = MKLTFS_NO_ERRORS;
 
 	/* close the tape device and unload the backend */

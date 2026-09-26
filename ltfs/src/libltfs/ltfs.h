@@ -344,18 +344,6 @@ typedef enum {
 	                         // used in the spec have changed to a larger value.  
 } mam_lockval;
 
-/*
-struct tape_attr {
-	char vender[TC_MAM_APP_VENDER_SIZE + 1];
-	char app_name[TC_MAM_APP_NAME_SIZE + 1];
-	char app_ver[TC_MAM_APP_VERSION_SIZE + 1];
-	char medium_label[TC_MAM_USER_MEDIUM_LABEL_SIZE + 1];
-	unsigned char tli;
-	char barcode[TC_MAM_BARCODE_SIZE + 1];
-	char app_format_ver[TC_MAM_APP_FORMAT_VERSION_SIZE + 1];
-};
-*/
-
 struct ltfs_volume {
 	/* acquire this lock for read before using the volume in any way. acquire it for write before
 	 * writing the index to tape or performing other exclusive operations. */
@@ -415,7 +403,6 @@ struct ltfs_volume {
 	bool livelink;                 /**< Live Link enabled? (SDE) */
 	char *mountpoint;              /**< Store mount point for Live Link (SDE) */
 	size_t mountpoint_len;         /**< Store mount point path length (SDE) */
-	/*struct tape_attr *t_attr;*/  /**< Tape Attribute data */
 	struct volume_lockbits lockbits; /**< Volume lock state structure*/
 };
 

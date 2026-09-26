@@ -1630,10 +1630,6 @@ int ltfs_mount(bool force_full, bool deep_recovery, bool recover_extra, bool rec
 	vol->ip_index_file_end = true;
 	vol->dp_index_file_end = true;
 
-	/* load tape attribute from Cartridge Memory*/
-	/*if (!vol->t_attr)
-		ret = ltfs_load_all_attributes(vol);*/
-
 out_unlock:
 	if (index && vol->index)
 		ltfs_index_free(&index);
@@ -1647,24 +1643,6 @@ out_unlock:
  * Load cartridge attribute varues from CM
  * @param vol the volume to get attribute
  */
-#if 0
-int ltfs_load_all_attributes(struct ltfs_volume *vol)
-{
-	int ret = 0;
-
-	if (!vol->t_attr) {
-		/* load tape attribute from Cartridge Memory*/
-		vol->t_attr = (struct tape_attr *) calloc(1, sizeof(struct tape_attr));
-		if (! vol->t_attr) {
-			ltfsmsg(LTFS_ERR, "10001E", "ltfs_load_all_attribute: vol->t_attr");
-			ret = -LTFS_NO_MEMORY;
-		} else
-			tape_load_all_attribute_from_cm(vol->device, vol->t_attr);
-	}
-
-	return ret;
-}
-#endif /* 0 */
 
 /**
  * Set the dirty or atime_dirty bit in an index.

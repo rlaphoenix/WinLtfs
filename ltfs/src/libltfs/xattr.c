@@ -906,35 +906,6 @@ int _xattr_get_virtual(struct dentry *d, char *buf, size_t buf_size, const char 
 		}
 	}
 
-/* Separate implementation for MAM attributes exist. */
-#if 0
-	} else if (! strcmp(name, "ltfs.mamBarcode")) {
-		ret = read_tape_attribute (vol, &val, name);
-		if (ret < 0) {
-			ltfsmsg(LTFS_DEBUG, "17198D", TC_MAM_BARCODE, "_xattr_get_virtual");
-			val = NULL;
-		}
-	} else if (! strcmp(name, "ltfs.mamApplicationVendor")) {
-		ret = read_tape_attribute (vol, &val, name);
-		if (ret < 0) {
-			ltfsmsg(LTFS_DEBUG, "17198D", TC_MAM_APP_VENDER, "_xattr_get_virtual");
-			val = NULL;
-		}
-	} else if (! strcmp(name, "ltfs.mamApplicationVersion")) {
-		ret = read_tape_attribute (vol, &val, name);
-		if (ret < 0) {
-			ltfsmsg(LTFS_DEBUG, "17198D", TC_MAM_APP_VERSION, "_xattr_get_virtual");
-			val = NULL;
-		}
-	} else if (! strcmp(name, "ltfs.mamApplicationFormatVersion")) {
-		ret = read_tape_attribute (vol, &val, name);
-		if (ret < 0) {
-			ltfsmsg(LTFS_DEBUG, "17198D", TC_MAM_APP_FORMAT_VERSION, "_xattr_get_virtual");
-			val = NULL;
-		}
-	}
-#endif /* 0 */
-
 	/* EAs on non-empty files */
 	if (ret == -LTFS_NO_XATTR && ! d->isdir && ! TAILQ_EMPTY(&d->extentlist)) {
 		if (! strcmp(name, "ltfs.partition")) {
@@ -1532,16 +1503,6 @@ int _xattr_set_virtual(struct dentry *d, const char *name, const char *value,
 				ret = _xattr_set_vendorunique_xattr(name, value, size, vol);
 			}
 	} 
-	/* Separate implementation for MAM attributes exist. */		
-#if 0
-	else if (! strcmp(name, "ltfs.mamBarcode")) {
-		ret =  update_tape_attribute (vol, value, TC_MAM_BARCODE, size);
-		if ( ret < 0 ) {
-			ltfsmsg(LTFS_WARN, "17199W", TC_MAM_USER_MEDIUM_LABEL, "_xattr_set_virtual");
-			return ret;
-		}	
-	}
-#endif /* 0 */
 	else
 		ret = -LTFS_NO_XATTR;
 
@@ -1580,14 +1541,6 @@ int _xattr_remove_virtual(struct dentry *d, const char *name, struct ltfs_volume
 		ret = tape_update_mam_attributes(vol->device, NULL, 0, NULL, NOLOCK_MAM);
 		tape_get_MAMattributes(vol->device, TC_MAM_USR_MED_TXT_LABEL,
 					            ltfs_part_id2num(vol->label->partid_ip, vol), &vol->mam_attr);
-/* Separate implementation for MAM attributes exist. */		
-#if 0
-		/* Clear tape attribute(TC_MAM_USER_MEDIUM_LABEL) */
-		ret =  update_tape_attribute (vol, NULL, TC_MAM_USER_MEDIUM_LABEL, 0);
-		if ( ret < 0 ) {
-			ltfsmsg(LTFS_WARN, "17199W", TC_MAM_USER_MEDIUM_LABEL, "_xattr_set_virtual");
-		}
-#endif /* 0 */
 		ltfs_mutex_unlock(&vol->index->dirty_lock);
 	} else
 		ret = -LTFS_NO_XATTR;
