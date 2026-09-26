@@ -35,7 +35,6 @@ config.status
 config.log
 stamp-h1
 libtool
-/ltfs/conf/ltfs.conf
 
 # Backups and editor/logs leftovers
 *~

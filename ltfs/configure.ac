@@ -96,23 +96,6 @@ then
 fi
 
 dnl
-dnl Check for special environment variables
-dnl
-if test -z "$DEFAULT_DRIVER"
-then
-	DEFAULT_DRIVER=ltotape
-fi
-if test -z "$DEFAULT_IOSCHED" ; then
-	DEFAULT_IOSCHED=unified
-fi
-if test -z "$DEFAULT_KMI" ; then
-	DEFAULT_KMI=none
-fi
-AC_ARG_VAR([DEFAULT_DRIVER], [default tape device plugin, e.g. ltotape])
-AC_ARG_VAR([DEFAULT_IOSCHED], [default I/O scheduler plugin, e.g. unified])
-AC_ARG_VAR([DEFAULT_KMI], [default key manager interface plugin, e.g. none])
-
-dnl
 dnl Check for pkg-config
 dnl
 if test -z "$PKG_CONFIG"
@@ -300,7 +283,6 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
     messages/Makefile
-    conf/Makefile
     src/Makefile
     src/libltfs/Makefile
     src/tape_drivers/windows/ltotape/Makefile
