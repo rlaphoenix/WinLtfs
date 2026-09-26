@@ -107,6 +107,7 @@ void tape_device_free(struct device_data **device, void * const kmi_handle, bool
 
 int tape_device_open(struct device_data *dev, const char *devname, struct tape_ops *ops,
 	void * const kmi_handle);
+struct tape_ops *tape_profiler_ops(struct tape_ops *ops);
 int tape_device_reopen(struct device_data *device, const char *devname);
 
 void _tape_device_close(struct device_data *device, void * const kmi_handle,

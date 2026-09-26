@@ -685,6 +685,10 @@ int ltfs_trace_init(void)
 	if (ret == 0)
 		ret = ltfs_fn_trace_init();
 
+	/* Backend profiler lock (no backend initializes it; a zeroed mutex is invalid) */
+	if (ret == 0 && ltfs_mutex_init(&bend_profiler_lock))
+		ret = -LTFS_MUTEX_INIT;
+
 	return ret;
 }
 

@@ -137,8 +137,8 @@ LTFS options:
     -o release_device         Clear device reservation (use with -o devname)
     -o capture_index          Capture latest index to the work directory at unmount
     -o request_trace          Record recent requests in memory, dump to work directory at unmount
-    -o request_profiler       Stream request and I/O scheduler profiles to work directory
-                              (implies request_trace)
+    -o request_profiler       Stream request, I/O scheduler and tape driver profiles to
+                              work directory (implies request_trace)
     -a                        Advanced help, including standard FUSE options
 
 LTOTAPE backend options:

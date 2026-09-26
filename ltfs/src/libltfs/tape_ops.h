@@ -1012,4 +1012,9 @@ const char *tape_dev_get_message_bundle_name(void **message_data);
 #define REQ_TC_GETSER      0036	/**< get_serialnumber */
 #define REQ_TC_SETSUPCHG   0037	/**< set_supported_changers */
 
+/* HPE ltotape operations with no IBM request number */
+#define REQ_TC_LOADUNLOAD  0038	/**< loadunload */
+#define REQ_TC_UPDMAMATTR  0039	/**< update_mam_attr */
+#define REQ_TC_READMAM     003a	/**< read_mam */
+
 #endif /* __tape_ops_h */

@@ -79,6 +79,7 @@
 #include "libltfs/arch/time_internal.h"
 #include "libltfs/arch/errormap.h"
 #include "libltfs/kmi.h"
+#include "libltfs/tape.h"
 
 #include "libltfs/arch/win/win_util.h"
 #include "libltfs/ltfs_internal.h"
@@ -1100,6 +1101,14 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_MOUNT), 0, 0);
 
+	/* Start profilers before the device opens so mount-time tape commands are recorded */
+	ltfs_trace_set_work_dir(priv->work_directory);
+	if (priv->request_profiler) {
+		int prof_ret = ltfs_profiler_set(PROF_REQ | PROF_IOSCHED | PROF_DRIVER);
+		if (prof_ret < 0)
+			ltfsmsg(LTFS_WARN, "14494W", priv->work_directory, prof_ret);
+	}
+
 #if defined(FSP_FUSE_CAP_STAT_EX)
 	/* WinFsp: negotiate the extended stat so st_flags (Windows file
 	 * attributes such as Archive) reach the filesystem layer. */
@@ -1149,7 +1158,8 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	 * performed here
 	 *
 	 */
-	if (ltfs_device_open(priv->devname, priv->driver_plugin.ops, priv->data) < 0) {
+	if (ltfs_device_open(priv->devname, priv->request_profiler ?
+			tape_profiler_ops(priv->driver_plugin.ops) : priv->driver_plugin.ops, priv->data) < 0) {
 		/* Could not open device */
 		ltfsmsg(LTFS_ERR, "10004E", priv->devname);
 		conn->reserved[0] = -LTFS_UNSUPPORTED_MEDIUM;
@@ -1429,12 +1439,6 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 	if (priv->capture_index)
 		ltfs_save_index_to_disk(priv->work_directory, NULL, false, priv->data);
 
-	ltfs_trace_set_work_dir(priv->work_directory);
-	if (priv->request_profiler) {
-		ret = ltfs_profiler_set(PROF_REQ | PROF_IOSCHED);
-		if (ret < 0)
-			ltfsmsg(LTFS_WARN, "14494W", priv->work_directory, ret);
-	}
 	ltfs_request_trace(FUSE_REQ_EXIT(REQ_MOUNT), (uint64_t)priv, 0);
 
 	/* Cartridge mounted: show its volume name and the mounted icon in Explorer. */
@@ -1487,8 +1491,6 @@ void ltfs_fuse_umount(void *userdata)
 		else
 			ltfsmsg(LTFS_INFO, "14492I", priv->work_directory, LTFS_TRACE_FILE);
 	}
-	if (priv->request_profiler)
-		ltfs_profiler_set(0);
 
 	/*
 	 * OSR
@@ -1507,6 +1509,10 @@ void ltfs_fuse_umount(void *userdata)
 	 * index was getting overwritten. 
 	 */
 	ltfs_volume_free(& priv->data);
+
+	/* Stop profilers last so eject and device close are recorded */
+	if (priv->request_profiler)
+		ltfs_profiler_set(0);
 }
 
 int ltfs_fuse_symlink(const char* to, const char* from)
