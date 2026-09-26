@@ -73,20 +73,12 @@ struct periodic_sync_data {
 ltfs_thread_return periodic_sync_thread(void* data)
 {
 	struct periodic_sync_data *priv = (struct periodic_sync_data *) data;
-#if (defined QUANTUM_BUILD) && (! defined osx_PLATFORM)
-    struct timespec now;
- #else
     struct timeval now;
-#endif
 
 	int ret;
 
 	ltfs_thread_mutex_lock(&priv->periodic_sync_thread_mutex);
-#if (defined QUANTUM_BUILD) && (! defined osx_PLATFORM)
-    while (priv->keepalive && clock_gettime(CLOCK_MONOTONIC, &now) == 0) {
-#else
 	while (priv->keepalive && gettimeofday(&now, NULL) == 0) {
-#endif
 		ltfs_thread_cond_timedwait(&priv->periodic_sync_thread_cond,
 								   &priv->periodic_sync_thread_mutex,
 								   priv->period_sec);
@@ -146,9 +138,6 @@ bool periodic_sync_thread_initialized(struct ltfs_volume *vol)
 int periodic_sync_thread_init(int sec, struct ltfs_volume *vol)
 {
 	int ret;
-#if (defined QUANTUM_BUILD) && (! defined osx_PLATFORM)
-    pthread_condattr_t cond_attr;
-#endif
     
 	struct periodic_sync_data *priv;
 
@@ -164,14 +153,7 @@ int periodic_sync_thread_init(int sec, struct ltfs_volume *vol)
 	priv->keepalive = true;
 	priv->period_sec = sec;
 
-#if (defined QUANTUM_BUILD) && (! defined osx_PLATFORM)
-    pthread_condattr_init( &cond_attr );
-    pthread_condattr_setclock( &cond_attr, CLOCK_MONOTONIC ); // unaffected by clock changes
-    ret = pthread_cond_init(&priv->periodic_sync_thread_cond, &cond_attr);
-    pthread_condattr_destroy( &cond_attr );
-#else
     ret = pthread_cond_init(&priv->periodic_sync_thread_cond, NULL);
-#endif
 
 	if (ret) {
 		ltfsmsg(LTFS_ERR, "10003E", ret);

@@ -76,16 +76,6 @@ typedef enum {
 } drive_family;
 
 
-#ifdef QUANTUM_BUILD
-/*
- * An enumerated type to distinguish T10 Vendor Identification:
- */
-typedef enum {
-   drivevendor_unknown,
-   drivevendor_hp,
-   drivevendor_quantum 
-} drivevendor_type;
-#endif
 
 /*
  * An enumerated type used for handling of early warning:
@@ -118,9 +108,6 @@ typedef struct {
    ltotape_eweomstate_type eweomstate;
    char*                   logdir;
    int                     unlimited_blocksize;
-#ifdef QUANTUM_BUILD
-   drivevendor_type        drive_vendor_id;
-#endif
 /*
  * Platform-specific members:
  */

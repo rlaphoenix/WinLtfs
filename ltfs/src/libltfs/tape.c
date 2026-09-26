@@ -1455,9 +1455,6 @@ int tape_format(struct device_data *dev, tape_partition_t index_part,
 	mp_medium_partition[1]  = 0x00;
 	mp_medium_partition[19] = 0x01;
 	mp_medium_partition[20] = 0x20 | (mp_medium_partition[20] & 0x1F); /* Set FDP=0, SDP=0, IDP=1 ==> User Setting */
-#if !(defined(HPE_BUILD) || defined(GENERIC_OEM_BUILD) || defined(QUANTUM_BUILD))
-	mp_medium_partition[22] = 0x00;
-#endif
 	if (index_part == 1) {
 		mp_medium_partition[24] = 0xFF; /* Set Partition0 Capacity */
 		mp_medium_partition[25] = 0xFF;
@@ -1771,23 +1768,14 @@ int tape_recover_eod_status(struct device_data *dev, void * const kmi_handle)
 		return ret;
 	}
 
-#if (defined HPE_BUILD) || (defined QUANTUM_BUILD) || (defined GENERIC_OEM_BUILD)
 	/* The last-reported position may be the unreadable block, so back off by 1 */
 	eod_pos.block--;
-#endif
 
 	/* Unload -> Load -> locate(erase point) -> erase to avoid drive fence behavior */
 	INTERRUPTED_RETURN();
 	ltfsmsg(LTFS_INFO, "17131I", eod_pos.partition, eod_pos.block);
 
 	/* HPE Change - the unload is unnecessary with our drive and also causes problems */
-#if !(defined(HPE_BUILD) || defined(GENERIC_OEM_BUILD) || defined(QUANTUM_BUILD))
-	ret = tape_unload_tape(dev);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "17133E");
-		return ret;
-	}
-#endif
 
 	INTERRUPTED_RETURN();
 	ret = tape_load_tape(dev, kmi_handle);
