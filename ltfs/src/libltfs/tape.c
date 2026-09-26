@@ -810,8 +810,10 @@ int tape_test_unit_ready(struct device_data *dev)
 	}
 
 	ret = _tape_test_unit_ready(dev);
-	if (ret < 0)
+	if (ret < 0) {
 		ltfsmsg(LTFS_ERR, "12029E", ret);
+		return ret;
+	}
 
 	dev->previous_exist.tv_sec = ts_now.tv_sec;
 	dev->previous_exist.tv_nsec = ts_now.tv_nsec;
