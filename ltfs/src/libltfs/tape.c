@@ -191,6 +191,105 @@ const char *tape_default_device_name(struct tape_ops *ops)
 	return devname;
 }
 
+/*
+ * Backend profiler. Rather than instrumenting every driver function, wrap the
+ * driver's operations table so each device command records an ENTER/EXIT pair
+ * in prof_driver.dat. Works for any backend (ltotape, file emulator).
+ */
+static struct tape_ops *prof_real;
+static struct tape_ops  prof_ops;
+
+#define PROF_OP(ret_t, op, code, params, args) \
+	static ret_t prof_##op params \
+	{ \
+		ret_t ret; \
+		ltfs_profiler_add_entry(bend_profiler, &bend_profiler_lock, TAPEBEND_REQ_ENTER(code)); \
+		ret = prof_real->op args; \
+		ltfs_profiler_add_entry(bend_profiler, &bend_profiler_lock, TAPEBEND_REQ_EXIT(code)); \
+		return ret; \
+	}
+
+#define PROF_OPS(X) \
+	X(int, open, REQ_TC_OPEN, (const char *devname, void **handle), (devname, handle)) \
+	X(int, reopen, REQ_TC_REOPEN, (const char *devname, void *handle), (devname, handle)) \
+	X(int, close, REQ_TC_CLOSE, (void *d), (d)) \
+	X(int, close_raw, REQ_TC_CLOSERAW, (void *d), (d)) \
+	X(int, is_connected, REQ_TC_ISCONNECTED, (const char *devname), (devname)) \
+	X(int, inquiry, REQ_TC_INQUIRY, (void *d, struct tc_inq *inq), (d, inq)) \
+	X(int, inquiry_page, REQ_TC_INQUIRYPAGE, (void *d, unsigned char page, struct tc_inq_page *inq), (d, page, inq)) \
+	X(int, test_unit_ready, REQ_TC_TUR, (void *d), (d)) \
+	X(int, read, REQ_TC_READ, (void *d, char *buf, size_t count, struct tc_position *pos, const bool unusual_size), \
+		(d, buf, count, pos, unusual_size)) \
+	X(int, write, REQ_TC_WRITE, (void *d, const char *buf, size_t count, struct tc_position *pos), (d, buf, count, pos)) \
+	X(int, writefm, REQ_TC_WRITEFM, (void *d, size_t count, struct tc_position *pos, bool immed), (d, count, pos, immed)) \
+	X(int, rewind, REQ_TC_REWIND, (void *d, struct tc_position *pos), (d, pos)) \
+	X(int, locate, REQ_TC_LOCATE, (void *d, struct tc_position dest, struct tc_position *pos), (d, dest, pos)) \
+	X(int, space, REQ_TC_SPACE, (void *d, size_t count, TC_SPACE_TYPE type, struct tc_position *pos), (d, count, type, pos)) \
+	X(int, erase, REQ_TC_ERASE, (void *d, struct tc_position *pos, bool long_erase), (d, pos, long_erase)) \
+	X(int, load, REQ_TC_LOAD, (void *d, struct tc_position *pos), (d, pos)) \
+	X(int, unload, REQ_TC_UNLOAD, (void *d, struct tc_position *pos), (d, pos)) \
+	X(int, loadunload, REQ_TC_LOADUNLOAD, (void *d, struct tc_position *pos, bool load, bool hold), (d, pos, load, hold)) \
+	X(int, readpos, REQ_TC_READPOS, (void *d, struct tc_position *pos), (d, pos)) \
+	X(int, setcap, REQ_TC_SETCAP, (void *d, uint16_t proportion), (d, proportion)) \
+	X(int, format, REQ_TC_FORMAT, (void *d, TC_FORMAT_TYPE format, const char *vol_name, const char *barcode_name, \
+		const char *vol_mam_uuid), (d, format, vol_name, barcode_name, vol_mam_uuid)) \
+	X(int, remaining_capacity, REQ_TC_REMAINCAP, (void *d, struct tc_remaining_cap *cap), (d, cap)) \
+	X(int, logsense, REQ_TC_LOGSENSE, (void *d, const uint8_t page, unsigned char *buf, const size_t size), \
+		(d, page, buf, size)) \
+	X(int, modesense, REQ_TC_MODESENSE, (void *d, const uint8_t page, const TC_MP_PC_TYPE pc, const uint8_t subpage, \
+		unsigned char *buf, const size_t size), (d, page, pc, subpage, buf, size)) \
+	X(int, modeselect, REQ_TC_MODESELECT, (void *d, unsigned char *buf, const size_t size), (d, buf, size)) \
+	X(int, reserve_unit, REQ_TC_RESERVEUNIT, (void *d), (d)) \
+	X(int, release_unit, REQ_TC_RELEASEUNIT, (void *d), (d)) \
+	X(int, prevent_medium_removal, REQ_TC_PREVENTM, (void *d), (d)) \
+	X(int, allow_medium_removal, REQ_TC_ALLOWMREM, (void *d), (d)) \
+	X(int, read_attribute, REQ_TC_READATTR, (void *d, const tape_partition_t part, const uint16_t id, \
+		unsigned char *buf, const size_t size), (d, part, id, buf, size)) \
+	X(int, write_attribute, REQ_TC_WRITEATTR, (void *d, const tape_partition_t part, const unsigned char *buf, \
+		const size_t size), (d, part, buf, size)) \
+	X(int, allow_overwrite, REQ_TC_ALLOWOVERW, (void *d, const struct tc_position pos), (d, pos)) \
+	X(int, report_density, REQ_TC_REPDENSITY, (void *d, struct tc_density_report *rep, bool medium), (d, rep, medium)) \
+	X(int, set_compression, REQ_TC_SETCOMPRS, (void *d, const bool enable_compression, struct tc_position *pos), \
+		(d, enable_compression, pos)) \
+	X(int, set_default, REQ_TC_SETDEFAULT, (void *d), (d)) \
+	X(int, get_cartridge_health, REQ_TC_GETCARTHLTH, (void *d, struct tc_cartridge_health *h), (d, h)) \
+	X(int, get_tape_alert, REQ_TC_GETTAPEALT, (void *d, uint64_t *tape_alert), (d, tape_alert)) \
+	X(int, clear_tape_alert, REQ_TC_CLRTAPEALT, (void *d, uint64_t tape_alert), (d, tape_alert)) \
+	X(int, get_xattr, REQ_TC_GETXATTR, (void *d, const char *name, char **buf), (d, name, buf)) \
+	X(int, set_xattr, REQ_TC_SETXATTR, (void *d, const char *name, const char *buf, size_t size), (d, name, buf, size)) \
+	X(int, get_parameters, REQ_TC_GETPARAM, (void *d, struct tc_drive_param *p), (d, p)) \
+	X(int, get_eod_status, REQ_TC_GETEODSTAT, (void *d, int part), (d, part)) \
+	X(int, set_key, REQ_TC_SETKEY, (void *d, const unsigned char *keyalias, const unsigned char *key), (d, keyalias, key)) \
+	X(int, get_keyalias, REQ_TC_GETKEYALIAS, (void *d, unsigned char **keyalias), (d, keyalias)) \
+	X(int, takedump_drive, REQ_TC_TAKEDUMPDRV, (void *d), (d)) \
+	X(bool, is_mountable, REQ_TC_ISMOUNTABLE, (void *d, const char *barcode, const unsigned char density_code), \
+		(d, barcode, density_code)) \
+	X(int, get_worm_status, REQ_TC_GETWORMSTAT, (void *d, bool *is_worm), (d, is_worm)) \
+	X(int, update_mam_attr, REQ_TC_UPDMAMATTR, (void *d, TC_FORMAT_TYPE format, const char *vol_name, \
+		unsigned int attribute_id, const char *barcode_name, unsigned lockbit), \
+		(d, format, vol_name, attribute_id, barcode_name, lockbit)) \
+	X(int, read_mam, REQ_TC_READMAM, (void *d, const tape_partition_t part, uint8_t action, uint16_t id, \
+		unsigned char *buf, size_t size, size_t *received), (d, part, action, id, buf, size, received))
+
+PROF_OPS(PROF_OP)
+
+/**
+ * Wrap a backend's operations so each device command is recorded by the backend profiler.
+ * Commands that don't touch a device (help_message, parse_opts, default_device_name,
+ * get_device_list) pass straight through.
+ * @param ops the backend's own operations
+ * @return operations to hand to tape_device_open()
+ */
+struct tape_ops *tape_profiler_ops(struct tape_ops *ops)
+{
+	prof_real = ops;
+	prof_ops = *ops;
+#define PROF_SET(ret_t, op, code, params, args) if (ops->op) prof_ops.op = prof_##op;
+	PROF_OPS(PROF_SET)
+#undef PROF_SET
+	return &prof_ops;
+}
+
 /**
  * Initialize a backend by opening the given device.
  * @param device device structure where the backend will be stored
