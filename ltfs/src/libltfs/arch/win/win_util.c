@@ -162,25 +162,28 @@ void gen_uuid_win(char *uuid_str)
 
 int get_win32_current_timespec(struct ltfs_timespec* now)
 {
-#define DATES_FOR_70Y   (70*365+(70/4))
+	/* FILETIME counts 100ns intervals since 1601-01-01 UTC; this is its value at the Unix epoch */
+#define FILETIME_UNIX_EPOCH 116444736000000000ULL
+	typedef VOID (WINAPI *precise_time_fn)(LPFILETIME);
+	/* GetSystemTimePreciseAsFileTime (100ns) is Windows 8+; Windows 7 falls back to the ~1-16ms clock */
+	static precise_time_fn precise_time;
+	static volatile LONG resolved;
+	FILETIME ft;
+	uint64_t t;
 
-	/* GetSystemTime returns UTC.            */
-	/* clock_gettime() returns Unixtime      */
-	/* (seconds from 1970/01/01 00:00:00)    */
-	/* VariantTime shows a date between 1900 */
-	/* /01/01 and 9999/12/31                 */
+	if (!resolved) {
+		precise_time = (precise_time_fn)GetProcAddress(GetModuleHandleA("kernel32.dll"),
+			"GetSystemTimePreciseAsFileTime");
+		resolved = 1;
+	}
+	if (precise_time)
+		precise_time(&ft);
+	else
+		GetSystemTimeAsFileTime(&ft);
 
-	SYSTEMTIME time;
-	double     vtime;
-
-	GetSystemTime(&time);
-	SystemTimeToVariantTime( &time, &vtime );
-
-	now->tv_nsec = time.wMilliseconds * 1000;
-	now->tv_sec = time.wSecond +
-			time.wMinute * 60 +
-			time.wHour * 60 * 60 +
-			((int)vtime-2-DATES_FOR_70Y) * 24 * 60 * 60;
+	t = (((uint64_t)ft.dwHighDateTime << 32) | ft.dwLowDateTime) - FILETIME_UNIX_EPOCH;
+	now->tv_sec = t / 10000000;
+	now->tv_nsec = (t % 10000000) * 100;
 
 	return 0;
 }
