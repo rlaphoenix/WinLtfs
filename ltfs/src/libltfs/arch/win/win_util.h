@@ -437,7 +437,7 @@ typedef void(*sighandler_t)(int);
  */
 #if defined(HPE_mingw_BUILD) && defined(LTFS_CONFIG_FILE)
 #undef LTFS_CONFIG_FILE
-#define LTFS_CONFIG_FILE "C:/ProgramData/HPE/LTFS/ltfs.conf"
+#define LTFS_CONFIG_FILE "C:/ProgramData/WinLtfs/ltfs.conf"
 #endif
 
 int _asprintf(char **strp, const char *fmt, ...);

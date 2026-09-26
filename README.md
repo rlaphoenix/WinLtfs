@@ -111,7 +111,7 @@ general options:
     -V   --version            print version
 
 LTFS options:
-    -o config_file=<file>     Configuration file (default: /usr/local/etc/ltfs.conf)
+    -o config_file=<file>     Configuration file (default: C:/ProgramData/WinLtfs/ltfs.conf)
     -o work_directory=<dir>   LTFS work directory (default: /tmp/ltfs)
     -o atime                  Update index if only access times have changed
     -o noatime                Do not update index if only access times have changed (default)
