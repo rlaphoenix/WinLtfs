@@ -86,7 +86,7 @@ void show_usage(char *appname, struct config_file *config, bool full)
 	fprintf(stderr, "\nwhere:\n");
 	fprintf(stderr, "\t-d, --device=<name> specifies the tape drive to use\n");
 	fprintf(stderr, "\t-y, --justdoit      omits normal verification steps, reformats without further prompting\n");
-	fprintf(stderr, "\t-e  --eject         eject tape after operation completes successfully\n");
+	fprintf(stderr, "\t-e, --eject         eject tape after operation completes successfully\n");
 	fprintf(stderr, "\t-q, --quiet         suppresses all progress output\n");
 	fprintf(stderr, "\t-t, --trace         displays detailed progress\n");
 	fprintf(stderr, "\t-h, --help          shows this help\n");

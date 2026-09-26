@@ -134,7 +134,7 @@ root:table {
 		
 		15490E:string { "Tape already contains an LTFS volume.  Need -f option to force reformat" }
 		15491I:string { "  -f, --force               Force reformat of existing LTFS volume (normally prevented)" }
-		15422I:string { "      --syslogtrace         Enable diagnostic output to stderr and syslog" } // 2.2.0.2
+		15422I:string { "      --syslogtrace         Enable diagnostic output to stderr and the Windows Event Log (errors only)" } // 2.2.0.2
 		15423I:string { "  -V, --version             Version information" } // 2.2.0.2
 		15424I:string { "      --long-wipe           Unformat the medium and erase any data on the tape by overwriting special data pattern.\n                            This operation takes over 3 hours. Once you start, you cannot interrupt it." }
 		15492I:string { "This operation will result in irrecoverable loss of data on the tape (Data or LTFS formatted). \n"
