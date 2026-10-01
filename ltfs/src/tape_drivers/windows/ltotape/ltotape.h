@@ -108,6 +108,7 @@ typedef struct {
    ltotape_eweomstate_type eweomstate;
    char*                   logdir;
    int                     unlimited_blocksize;
+   unsigned char           dki[12];   /* DKi (DKI_LENGTH) of the next block, from get_keyalias */
 /*
  * Platform-specific members:
  */
@@ -357,6 +358,7 @@ enum volstatvalues {
 #define SENSE_IS_UNIT_ATTENTION(b)     ( (b[2] & 0x0F) == 0x06                                       )
 #define SENSE_HAS_ILI_SET(b)           ( (b[2] & 0x20) == 0x20                                       )
 #define SENSE_IS_MODE_PARAMETER_ROUNDED(b)     (( b[2] == 0x01)  && (b[12] == 0x37) && (b[13] == 0x00))
+#define SENSE_IS_CRYPTO_ERROR(b)       (((b[2] & 0x0F) == 0x07) && (b[12] == 0x74))
 #define SENSE_IS_MEDIA_NOT_LOGICALLY_LOADED(b) (((b[2] & 0x0F) == 0x02) && (b[12] == 0x04) && (b[13] == 0x02))
 
 /*

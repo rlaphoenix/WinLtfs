@@ -260,15 +260,14 @@ void show_usage(char *appname, struct config_file *config, bool full)
 	if (full) {
 		ltfsresult("16414I", LTFS_CONFIG_FILE); /* -i, --config=<file> */
 		ltfsresult("16415I");                   /* -e, --backend=<name> */
-		/* We have disabled all messages related to 'kmi' */
-		/*ltfsresult("16423I");*/               /*     --kmi-backend=<name> */
+		ltfsresult("16423I");                   /*     --kmi-backend=<name> */
 		ltfsresult("16416I");                   /* -x, --fulltrace */
 		ltfsresult("16424I");                   /*     --capture-index */
 		ltfsresult("16427I");                   /*     --salvage-rollback-points */
 		ltfsresult("16445I");                   /*     --Pipe */
 		fprintf(stderr, "\n");
 		plugin_usage(appname, "driver", config);
-		/*plugin_usage("kmi", config);*/
+		plugin_usage(appname, "kmi", config);
 	}
 	fprintf(stderr, "\n");
 	ltfsresult("16432I"); /* Usage example: */

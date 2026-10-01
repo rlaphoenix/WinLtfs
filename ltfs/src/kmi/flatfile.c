@@ -130,8 +130,8 @@ static int convert_option(const unsigned char * const path, unsigned char **dk_l
 			memcpy(*dk_list + dk_list_offset, buf + strlen(tag[i].name), value_length);
 			dk_list_offset += value_length;
 			*(*dk_list + dk_list_offset) = '\0';
-		} else if (buf[0] == '\n') {
-			/* skip a blank line */
+		} else if (buf[0] == '\n' || buf[0] == '#') {
+			/* skip a blank line or a comment */
 			--num_of_lines;
 			continue;
 		} else {
@@ -259,9 +259,10 @@ struct kmi_ops *kmi_get_ops(void)
 	return &flatfile_ops;
 }
 
+extern char kmi_flatfile_dat[];
 
 const char *kmi_get_message_bundle_name(void ** const message_data)
 {
-	*message_data = NULL;
+	*message_data = kmi_flatfile_dat;
 	return "kmi_flatfile";
 }

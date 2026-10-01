@@ -185,8 +185,7 @@ void show_usage(char *appname, struct config_file *config, bool full)
 	if (full) {
 		ltfsresult("15413I", LTFS_CONFIG_FILE);       /* -i, --config=<file> */
 		ltfsresult("15414I", default_backend);        /* -e, --backend */
-		/* We have disabled all messages related to the 'kmi' backend. */
-		/*ltfsresult("15421I", config_file_get_default_plugin("kmi", config));*/ /*     --kmi-backend */
+		ltfsresult("15421I", config_file_get_default_plugin("kmi", config)); /*     --kmi-backend */
 		ltfsresult("15415I", LTFS_DEFAULT_BLOCKSIZE); /* -b, --blocksize */
 		ltfsresult("15416I");                         /* -c, --no-compression */
 		ltfsresult("15419I");                         /* -k, --keep-capacity */
@@ -194,7 +193,7 @@ void show_usage(char *appname, struct config_file *config, bool full)
 		ltfsresult("15424I");                         /* --long-wipe */
 		fprintf(stderr, "\n");
 		plugin_usage(appname, "driver", config);
-		/*plugin_usage("kmi", config);*/
+		plugin_usage(appname, "kmi", config);
 	}
 	fprintf(stderr, "\n");
 	ltfsresult("15410I"); /* Usage example: */

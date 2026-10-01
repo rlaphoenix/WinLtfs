@@ -22,6 +22,7 @@ Mount, Format, and Test LTFS tapes on Windows with [WinFsp](https://winfsp.dev).
 - 🗂️ Format, Unformat, and Test LTO tapes
 - 💾 Automatic Tape Index Backups
 - 🔒 Honors Write-Protection and Read-Only tapes
+- 🔐 Optional AES-256-GCM Tape Encryption Support
 - 🏷️ Real Cartridge Label shown in Explorer
 
 ## Supported Tape Drives
@@ -126,6 +127,7 @@ LTFS options:
     -o noatime                Do not update index if only access times have changed (default)
     -o tape_backend=<name>    tape backend to use (default: ltotape)
     -o iosched_backend=<name> I/O scheduler implementation to use (default: unified, use "none" to disable)
+    -o kmi_backend=<name>     Key manager interface implementation to use (default: none, use "none" to disable)
     -o umask=<mode>           Override default permission mask (3 octal digits, default: 000)
     -o fmask=<mode>           Override file permission mask (3 octal digits, default: 000)
     -o dmask=<mode>           Override directory permission mask (3 octal digits, default: 000)
@@ -214,6 +216,7 @@ Available options are:
   -g, --interactive         Interactive mode
   -i, --config=<file>       Use the specified configuration file (default: C:/ProgramData/WinLtfs/ltfs.conf)
   -e, --backend=<name>      Use the specified tape device backend (default: ltotape)
+      --kmi-backend=<name>  Use the specified key manager interface backend (default: none)
   -b, --blocksize=<num>     Set the LTFS record size (default: 524288)
   -c, --no-compression      Disable compression on the volume
   -k, --keep-capacity       Keep the tape medium's total capacity proportion
@@ -270,6 +273,7 @@ Available options are:
   -p, --advanced-help             Full help, including advanced options
   -i, --config=<file>             Use the specified configuration file (default: C:/ProgramData/WinLtfs/ltfs.conf)
   -e, --backend=<name>            Override the default tape device backend
+      --kmi-backend=<name>        Override the default key manager interface backend
   -x, --fulltrace                 Enable full function call tracing (slow)
       --capture-index             Capture index information to the current directory (-g is effective for this option)
       --salvage-rollback-points   List the rollback points of the cartridge that has no EOD
@@ -309,6 +313,78 @@ where:
 	-b, --backend       specifies a different tape backend subsystem
 	-x, --fulltrace     displays debug information (verbose)
 ```
+
+## Encryption
+
+Your tape drive can encrypt everything it writes, using a key that only you hold. Without
+that key the tape can't be read: not the files, not even their names. This is useful
+whenever tapes leave your hands, such as off-site backups, cartridges shipped by courier,
+storage you don't control, or a cartridge that gets lost or stolen. The drive does the
+encryption itself, so it costs no speed or capacity.
+
+### Setting up your keys
+
+Keys live in a key file, a plain text file listing each key under a name of your choosing.
+Each tape remembers the name of the key it was written with, so one file can hold keys for
+many tapes and WinLtfs picks the right one when you mount.
+
+Make a new key with PowerShell:
+
+```powershell
+[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+```
+
+Then add it to your key file with a name: 3 letters followed by 18 hex digits (0-9, A-F).
+Lines starting with `#` are comments.
+
+```text
+# e.g. Off-site backups
+DK=<the key you made>
+DKi=KEY000000000000000001
+
+# e.g. Archive tapes
+DK=<another key>
+DKi=KEY000000000000000002
+```
+
+### Using it
+
+```powershell
+# Format an encrypted tape with the key named KEY000000000000000001
+mkltfs.exe -d TAPE0 --kmi-backend=flatfile -o kmi_dk_list=C:/keys/ltfs-keys.txt -o kmi_dki_for_format=KEY000000000000000001
+
+# Mount it (the right key is picked from the file automatically)
+ltfs.exe T: -o devname=TAPE0 -o kmi_backend=flatfile -o kmi_dk_list=C:/keys/ltfs-keys.txt
+
+# Check it
+ltfsck.exe --kmi-backend=flatfile -o kmi_dk_list=C:/keys/ltfs-keys.txt TAPE0
+```
+
+To use the same key file for every mount, add these lines to `ltfs.conf`:
+
+```text
+option single-drive kmi_backend=flatfile
+option single-drive kmi_dk_list=C:/keys/ltfs-keys.txt
+```
+
+Good to know:
+
+- Tapes that aren't encrypted still mount as normal with a key file set.
+- New files written to an encrypted tape are encrypted with that tape's key.
+- A tape written with more than one key, or partly without one, mounts read-only.
+- The cartridge's label and volume name stay readable without the key; the files don't.
+- For quick tests, the `simple` plug-in takes a key directly
+  (`-o kmi_backend=simple -o kmi_dk=<key> -o kmi_dki=<name>`). Avoid it for real keys, as
+  anything typed on the command line is kept in your PowerShell history.
+
+### Technical details
+
+Encryption is AES-256-GCM, done in hardware by the drive (LTO-4 and newer) using the standard
+SCSI application-managed encryption commands. The key is never written to the tape: the drive
+only holds it in memory, and WinLtfs clears it when a tape is loaded and when it closes the
+drive. The key's name is recorded with every block written, which is how the right key is
+found again. Key plug-ins and options are the same as IBM LTFS, and key values are masked in
+WinLtfs' logs.
 
 ## Reading tape attributes
 

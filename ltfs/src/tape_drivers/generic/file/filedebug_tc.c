@@ -74,6 +74,7 @@
 #include "libltfs/tape_ops.h"
 #include "libltfs/ltfs.h"        /* mam_lockval, used by the tape_ops signatures */
 #include "libltfs/ltfs_error.h"
+#include "kmi/key_format_ltfs.h"
 
 volatile char *copyright = LTFS_COPYRIGHT_0"\n"LTFS_COPYRIGHT_1"\n"LTFS_COPYRIGHT_2"\n" \
 	LTFS_COPYRIGHT_3"\n"LTFS_COPYRIGHT_4"\n"LTFS_COPYRIGHT_5"\n";
@@ -119,11 +120,19 @@ struct filedebug_data {
 	unsigned p1_warning;                 /**< Nonzero to provide early warning on partition 1 */
 	unsigned p0_p_warning;               /**< Nonzero to provide programmable early warning on partition 0 */
 	unsigned p1_p_warning;               /**< Nonzero to provide programmable early warning on partition 1 */
+	bool key_set;                        /**< True when a data key is set: records are "encrypted" */
+	unsigned char dki[DKI_LENGTH];       /**< Set DKi */
+	unsigned char next_dki[DKI_LENGTH];  /**< Next block's DKi, from get_keyalias */
+	unsigned char dk[DK_LENGTH];         /**< Set data key */
 };
 
 
 /* record suffixes for data block, filemark, EOD indicator */
 static const char *rec_suffixes = "RFE";
+
+/* An "encrypted" record R has a K file beside it holding the DKi and data key it was
+ * written with; reading it needs that key set, as a drive doing encryption would. */
+#define SUFFIX_KEY 'K'
 #define SUFFIX_RECORD   (0)
 #define SUFFIX_FILEMARK (1)
 #define SUFFIX_EOD      (2)
@@ -376,6 +385,20 @@ int filedebug_read(void *vstate, char *buf, size_t count, struct tc_position *po
 		return ret;
 	}
 	if (ret > 0) {
+		unsigned char kad[DKI_LENGTH + DK_LENGTH];
+		fname[fname_len - 1] = SUFFIX_KEY;
+		fd = open(fname, O_RDONLY | O_BINARY);
+		if (fd >= 0) {
+			bytes_read = read(fd, kad, sizeof(kad));
+			close(fd);
+			if (bytes_read != (ssize_t)sizeof(kad) || !state->key_set ||
+				memcmp(kad + DKI_LENGTH, state->dk, DK_LENGTH)) {
+				free(fname);
+				return -EDEV_CRYPTO_ERROR;
+			}
+		}
+		fname[fname_len - 1] = rec_suffixes[SUFFIX_RECORD];
+
 		fd = open(fname, O_RDONLY | O_BINARY);
 		free(fname);
 		if (fd < 0) {
@@ -487,6 +510,22 @@ int filedebug_write(void *vstate, const char *buf, size_t count, struct tc_posit
 	if (rc < 0) {
 		ltfsmsg(LTFS_ERR, "12180E", errno);
 		return -EDEV_RW_PERM;
+	}
+
+	if (state->key_set) {
+		fname = _filedebug_make_current_filename(state, SUFFIX_KEY);
+		if (!fname)
+			return -EDEV_NO_MEMORY;
+		fd = open(fname, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, S_IWUSR | S_IRUSR);
+		free(fname);
+		if (fd < 0)
+			return -EDEV_RW_PERM;
+		written = write(fd, state->dki, DKI_LENGTH);
+		if (written == DKI_LENGTH)
+			written = write(fd, state->dk, DK_LENGTH);
+		close(fd);
+		if (written != DK_LENGTH)
+			return -EDEV_RW_PERM;
 	}
 
 	/* clean up old records */
@@ -1488,6 +1527,8 @@ int _filedebug_remove_record(const struct filedebug_data *state,
 			return -EDEV_RW_PERM;
 		}
 	}
+	fname[fname_len-1] = SUFFIX_KEY;
+	unlink(fname);
 
 	free(fname);
 	return DEVICE_GOOD;
@@ -1784,12 +1825,36 @@ int filedebug_get_device_list(struct tc_drive_info *buf, int count)
 
 int filedebug_set_key(void *device, const unsigned char *keyalias, const unsigned char *key)
 {
-	return -EDEV_UNSUPPORTED_FUNCTION;
+	struct filedebug_data *state = (struct filedebug_data *)device;
+
+	if (keyalias && !key)
+		return -EDEV_INVALID_ARG;
+	state->key_set = keyalias != NULL;
+	if (keyalias) {
+		memcpy(state->dki, keyalias, DKI_LENGTH);
+		memcpy(state->dk, key, DK_LENGTH);
+	}
+	return DEVICE_GOOD;
 }
 
 int filedebug_get_keyalias(void *device, unsigned char **keyalias)
 {
-	return -EDEV_UNSUPPORTED_FUNCTION;
+	struct filedebug_data *state = (struct filedebug_data *)device;
+	char *fname;
+	int fd;
+
+	*keyalias = NULL;
+	fname = _filedebug_make_current_filename(state, SUFFIX_KEY);
+	if (!fname)
+		return -EDEV_NO_MEMORY;
+	fd = open(fname, O_RDONLY | O_BINARY);
+	free(fname);
+	if (fd < 0)
+		return DEVICE_GOOD; /* the next block is not encrypted */
+	if (read(fd, state->next_dki, DKI_LENGTH) == DKI_LENGTH)
+		*keyalias = state->next_dki;
+	close(fd);
+	return DEVICE_GOOD;
 }
 
 int filedebug_takedump_drive(void *device)

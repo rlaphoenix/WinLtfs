@@ -209,9 +209,10 @@ struct kmi_ops *kmi_get_ops(void)
 	return &simple_ops;
 }
 
+extern char kmi_simple_dat[];
 
 const char *kmi_get_message_bundle_name(void ** const message_data)
 {
-	*message_data = NULL;
+	*message_data = kmi_simple_dat;
 	return "kmi_simple";
 }

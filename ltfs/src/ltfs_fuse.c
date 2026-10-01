@@ -1156,6 +1156,30 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 		return NULL;
 	}
 
+	if (priv->kmi_backend_name) {
+		if (kmi_init(&priv->kmi_plugin, priv->data) < 0) {
+			/* Encryption function disabled. */
+			ltfsmsg(LTFS_ERR, "14089E");
+			conn->reserved[0] = -LTFS_UNSUPPORTED_MEDIUM;
+			ltfs_device_close(priv->data);
+			return NULL;
+		}
+
+		if (ltfs_parse_kmi_backend_opts(priv->args, priv->data)) {
+			/* Backend option parsing failed */
+			ltfsmsg(LTFS_ERR, "14090E");
+			conn->reserved[0] = -LTFS_UNSUPPORTED_MEDIUM;
+			ltfs_device_close(priv->data);
+			return NULL;
+		}
+
+		if (tape_clear_key(priv->data->device, priv->data->kmi_handle) < 0) {
+			conn->reserved[0] = -LTFS_UNSUPPORTED_MEDIUM;
+			ltfs_device_close(priv->data);
+			return NULL;
+		}
+	}
+
 	/* Check EOD validation is skipped or not */
 	if ( priv->skip_eod_check ) {
 		ltfsmsg(LTFS_INFO, "14076I");

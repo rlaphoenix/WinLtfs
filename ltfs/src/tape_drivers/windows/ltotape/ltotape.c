@@ -52,6 +52,7 @@
 #include "libltfs/ltfs_fuse_version.h"
 #include "ltfsprintf.h"
 #include "libltfs/ltfs.h"
+#include "kmi/key_format_ltfs.h"
 
 #include <fuse.h>
 #include <fuse_opt.h>
@@ -474,6 +475,10 @@ static int _cdb_read(void *device, char *buf, size_t count, bool silion)
        ltfsmsg(LTFS_DEBUG, "20038D");
        status = 0;
 
+     } else if (SENSE_IS_CRYPTO_ERROR(sio->sensedata)) {
+       /* Encrypted block without (the right) data key: libltfs asks the KMI and retries */
+       errno = EDEV_CRYPTO_ERROR;
+
      } else {
        errno = EIO;
      }
@@ -574,6 +579,8 @@ int ltotape_read(void *device, char *buf, size_t count, struct tc_position *pos,
         ltfsmsg(LTFS_ERR, "20055E", "read");
         ltotape_log_snapshot (device, FALSE);
         break;
+      case -EDEV_CRYPTO_ERROR:
+        break; /* libltfs reports it if the data key cannot be set */
       default:
         ltfsmsg(LTFS_ERR, "20054E", "read", -rc);
         break;
@@ -3204,14 +3211,121 @@ const char *ltotape_default_device_name(void)
    return ltotape_default_device;
 }
 
-int ltotape_set_key(void *device, const unsigned char *keyalias, const unsigned char *key)
+/**------------------------------------------------------------------------**
+ * Internal function to perform a SECURITY PROTOCOL IN/OUT command for the
+ *  tape data encryption protocol (20h)
+ */
+static int _cdb_security(void *device, unsigned char opcode, uint16_t sps, unsigned char *buf, size_t size)
 {
-        return 0;
+  ltotape_scsi_io_type *sio = (ltotape_scsi_io_type*)device;
+
+  memset(sio->cdb, 0, 12);
+  sio->cdb[0] = opcode;
+  sio->cdb[1] = 0x20;                         /* SECURITY PROTOCOL: tape data encryption */
+  sio->cdb[2] = (unsigned char) (sps >> 8);   /* SECURITY PROTOCOL SPECIFIC: page code */
+  sio->cdb[3] = (unsigned char) (sps & 0xFF);
+  sio->cdb[6] = (unsigned char) (size >> 24);
+  sio->cdb[7] = (unsigned char) (size >> 16);
+  sio->cdb[8] = (unsigned char) (size >>  8);
+  sio->cdb[9] = (unsigned char) (size & 0xFF);
+
+  sio->cdb_length = 12;         /* twelve-byte cdb */
+
+  sio->data = buf;
+  sio->data_length = size;
+  sio->data_direction = (opcode == CMDsecurity_in) ? HOST_READ : HOST_WRITE;
+
+  sio->timeout_ms = LTO_DEFAULT_TIMEOUT;
+  return ltotape_scsiexec (sio);
 }
 
+/**------------------------------------------------------------------------**
+ * Set or clear the data key for application-managed encryption
+ *  (SECURITY PROTOCOL OUT, Set Data Encryption page 0010h), as IBM's sg backend does:
+ *
+ *   Encryption  Decryption   Key        DKi (A-KAD)  keyalias
+ *   0h Disable  0h Disable   -          -            NULL
+ *   2h Encrypt  3h Mixed     Mandatory  Mandatory    !NULL
+ *
+ * @param device a pointer to the ltotape backend
+ * @param keyalias DKi (DKI_LENGTH bytes) recorded with each encrypted block, or NULL to clear the key
+ * @param key data key (DK_LENGTH bytes), required with keyalias
+ * @return 0 on success or a negative value on error
+ */
+int ltotape_set_key(void *device, const unsigned char *keyalias, const unsigned char *key)
+{
+  unsigned char buf[20 + DK_LENGTH + 4 + DKI_LENGTH] = {0};
+  const size_t  size = keyalias ? sizeof(buf) : 20;
+  int           status;
+
+  if (keyalias && ! key)
+    return -EINVAL;
+
+  buf[1] = 0x10;                                /* PAGE CODE: Set Data Encryption */
+  buf[2] = (unsigned char) ((size - 4) >> 8);   /* PAGE LENGTH */
+  buf[3] = (unsigned char) ((size - 4) & 0xFF);
+  buf[4] = 0x40;                                /* SCOPE: 010b All I_T nexus, LOCK: 0 */
+  buf[5] = 0x00;                                /* CEEM, RDMC, SDK, CKOD, CKORP, CKORL: 0 */
+  buf[6] = keyalias ? 0x02 : 0x00;              /* ENCRYPTION MODE: Encrypt / Disable */
+  buf[7] = keyalias ? 0x03 : 0x00;              /* DECRYPTION MODE: Mixed / Disable */
+  buf[8] = 0x01;                                /* ALGORITHM INDEX: AES-256-GCM on LTO */
+  buf[9] = 0x00;                                /* KEY FORMAT: plain-text key */
+  buf[10] = 0x00;                               /* KAD FORMAT: unspecified */
+  if (keyalias) {
+    buf[19] = DK_LENGTH;                        /* KEY LENGTH */
+    memcpy(buf + 20, key, DK_LENGTH);
+    buf[20 + DK_LENGTH] = 0x01;                 /* KEY DESCRIPTOR TYPE: A-KAD, holds the DKi */
+    buf[20 + DK_LENGTH + 3] = DKI_LENGTH;       /* KEY DESCRIPTOR LENGTH */
+    memcpy(buf + 20 + DK_LENGTH + 4, keyalias, DKI_LENGTH);
+  }
+
+  status = _cdb_security(device, CMDsecurity_out, 0x0010, buf, size);
+  SecureZeroMemory(buf, sizeof(buf));
+  return status;
+}
+
+/**------------------------------------------------------------------------**
+ * Get the DKi of the next block's data key for application-managed encryption
+ *  (SECURITY PROTOCOL IN, Next Block Encryption Status page 0021h)
+ * @param device a pointer to the ltotape backend
+ * @param keyalias set to the DKi if the next block is encrypted, else NULL
+ * @return 0 on success or a negative value on error
+ */
 int ltotape_get_keyalias(void *device, unsigned char **keyalias)
 {
-        return 0;
+  ltotape_scsi_io_type *sio = (ltotape_scsi_io_type*)device;
+  unsigned char         buf[1024] = {0};
+  size_t                len, offset, n;
+  int                   status;
+
+  *keyalias = NULL;
+  memset(sio->dki, 0, sizeof(sio->dki));
+
+  status = _cdb_security(device, CMDsecurity_in, 0x0021, buf, sizeof(buf));
+  if (status < 0)
+    return status;
+
+  /* ENCRYPTION STATUS 4h-6h: the next block is encrypted (unsupported algorithm /
+   * supported algorithm / other key); anything else has no key to look up. */
+  if ((buf[12] & 0x0F) < 0x04 || (buf[12] & 0x0F) > 0x06)
+    return 0;
+
+  /* Key-associated data descriptors follow the 16-byte header; the DKi is the A-KAD (01h) */
+  len = 4 + (((size_t)buf[2] << 8) | buf[3]);
+  if (len > sizeof(buf))
+    len = sizeof(buf);
+  for (offset = 16; offset + 4 <= len; offset += 4 + n) {
+    n = ((size_t)buf[offset + 2] << 8) | buf[offset + 3];
+    if (buf[offset] == 0x01) {
+      if (offset + 4 + n <= len) {
+        memcpy(sio->dki, buf + offset + 4, n < sizeof(sio->dki) ? n : sizeof(sio->dki));
+        *keyalias = sio->dki;
+      }
+      break;
+    }
+  }
+
+  return 0;
 }
 
 int ltotape_takedump_drive(void *device)

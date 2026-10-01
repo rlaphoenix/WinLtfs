@@ -158,8 +158,7 @@ void single_drive_advanced_usage(const char *default_driver, struct ltfs_fuse_da
 	ltfsresult("14440I");                        /* -o noatime */
 	ltfsresult("14415I", default_driver);        /* -o tape_backend=<name> */
 	ltfsresult("14416I", config_file_get_default_plugin("iosched", priv->config)); /* -o iosched_backend=<name> */
-	/* We have disabled all messages related to 'kmi' by default. */
-	/*ltfsresult("14455I", config_file_get_default_plugin("kmi", priv->config));*/ /* -o kmi_backend=<name> */
+	ltfsresult("14455I", config_file_get_default_plugin("kmi", priv->config)); /* -o kmi_backend=<name> */
 	ltfsresult("14417I");                        /* -o umask=<mode> */
 	ltfsresult("14418I");                        /* -o fmask=<mode> */
 	ltfsresult("14419I");                        /* -o dmask=<mode> */
@@ -236,8 +235,7 @@ void usage(char *progname, struct ltfs_fuse_data *priv)
 		single_drive_advanced_usage(default_driver, priv);
 		fprintf(stderr, "\n");
 		plugin_usage(progname, "driver", priv->config);
-		/* We will not be printing any messages related to 'kmi'. */
-		/*plugin_usage("kmi", priv->config);*/
+		plugin_usage(progname, "kmi", priv->config);
 	}
 }
 
@@ -491,7 +489,7 @@ int main(int argc, char **argv)
 	int ret, i, cmd_args_len;
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	struct ltfs_fuse_data *priv = (struct ltfs_fuse_data *) calloc(1, sizeof(struct ltfs_fuse_data));
-	char *lang, **mount_options, *cmd_args;
+	char *lang, **mount_options, *cmd_args, *p;
 	void *message_handle;
 
 	/* Suppress warning on Windows builds. */
@@ -585,6 +583,16 @@ int main(int argc, char **argv)
 	for (i = 1; i < argc; i++) {
 		strcat(cmd_args, " ");
 		strcat(cmd_args, argv[i]);
+	}
+	/* Mask data keys (kmi_dk=, kmi_dk_for_format=) so they don't end up in logs */
+	for (p = cmd_args; (p = strstr(p, "kmi_dk")); ) {
+		p += strlen("kmi_dk");
+		if (! strncmp(p, "_for_format", strlen("_for_format")))
+			p += strlen("_for_format");
+		if (*p != '=')
+			continue;
+		for (++p; *p && *p != ',' && *p != ' '; ++p)
+			*p = '*';
 	}
 	ltfsmsg(LTFS_INFO, "14104I", cmd_args);
 	free(cmd_args);
