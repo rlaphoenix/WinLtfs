@@ -138,14 +138,12 @@ static inline int ltfs_thread_cond_timedwait(ltfs_thread_cond_t *restrict cond,
 											 ltfs_thread_mutex_t *restrict mutex,
 											 const int sec)
 {
-	struct timeval now;
-	struct timespec timeout;
+	/* Relative wait: winpthreads times this on the tick count, so wall-clock
+	 * jumps (NTP step, manual change) can't stretch or cut it short.
+	 * pthread_condattr_setclock(CLOCK_MONOTONIC) is accepted but ignored there. */
+	struct timespec timeout = { .tv_sec = sec, .tv_nsec = 0 };
 
-	gettimeofday(&now, NULL);
-	timeout.tv_sec = now.tv_sec + sec;
-	timeout.tv_nsec = 0;
-
-	return pthread_cond_timedwait(cond, mutex, &timeout);
+	return pthread_cond_timedwait_relative_np(cond, mutex, &timeout);
 }
 
 static inline int ltfs_thread_cond_wait(ltfs_thread_cond_t *restrict cond,
