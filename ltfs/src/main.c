@@ -821,6 +821,46 @@ int main(int argc, char **argv)
 	return ret;
 }
 
+/*
+ * Windows shutdown/logoff. WinFsp's console handler turns Ctrl+C/Break/close
+ * into a clean unmount, but WinFsp loads user32, so Windows delivers
+ * shutdown/logoff to top-level windows (WM_QUERYENDSESSION) rather than to
+ * console handlers, and the process would be killed with the index unwritten.
+ * A hidden window catches it, holds shutdown with a visible reason, and asks
+ * WinFsp to stop (fsp_fuse_signal_handler, the Ctrl+C path), which runs
+ * ltfs_fuse_umount. Shutdown resumes once the process exits. A forced
+ * shutdown, or the user choosing "Shut down anyway", can still cut it short.
+ */
+static LRESULT CALLBACK shutdown_wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	switch (msg) {
+	case WM_QUERYENDSESSION:
+		ShutdownBlockReasonCreate(hwnd, L"Writing the LTFS index to tape. Shutting down now can lose data on the tape.");
+		SetTimer(hwnd, 1, 1000, NULL);
+		fsp_fuse_signal_handler(SIGINT);
+		return FALSE;
+	case WM_TIMER:
+		fsp_fuse_signal_handler(SIGINT);
+		return 0;
+	}
+	return DefWindowProcW(hwnd, msg, wp, lp);
+}
+
+static DWORD WINAPI shutdown_watch_thread(LPVOID unused)
+{
+	WNDCLASSW wc = { .lpfnWndProc = shutdown_wndproc, .lpszClassName = L"WinLtfsShutdownWatch" };
+	MSG msg;
+
+	(void)unused;
+	wc.hInstance = GetModuleHandleW(NULL);
+	RegisterClassW(&wc);
+	if (!CreateWindowExW(0, wc.lpszClassName, L"WinLtfs", 0, 0, 0, 0, 0, NULL, NULL, wc.hInstance, NULL))
+		return 1;
+	while (GetMessageW(&msg, NULL, 0, 0) > 0)
+		DispatchMessageW(&msg);
+	return 0;
+}
+
 int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 {
 	int ret;
@@ -1009,6 +1049,7 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	ltfsmsg(LTFS_INFO, "14111I");
 	ltfsmsg(LTFS_INFO, "14112I");
 	ltfsmsg(LTFS_INFO, "14113I");
+	CloseHandle(CreateThread(NULL, 0, shutdown_watch_thread, NULL, 0, NULL));
 	ret = fuse_main(args->argc, args->argv, &ltfs_ops, priv);
 
 	/*  Setup signal handler again to terminate cleanly */
