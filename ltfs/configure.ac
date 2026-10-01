@@ -158,16 +158,6 @@ dnl
 PKG_CHECK_MODULES([ICU_MODULE], [icu-uc icu-i18n])
 
 dnl
-dnl Check for SNMP
-dnl
-dnl SNMP_MODULE_CFLAGS="`net-snmp-config --cflags`";
-dnl SNMP_MODULE_LIBS="`net-snmp-config --agent-libs` `net-snmp-config --libs`";
-dnl if test -z "$SNMP_MODULE_LIBS"
-dnl then
-dnl     PKG_CHECK_MODULES([SNMP_MODULE], [net-snmp >= 5.3])
-dnl fi
-
-dnl
 dnl Check for headers, types, structures, compiler characteristics
 dnl
 AC_CHECK_HEADERS([fcntl.h limits.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/mount.h sys/time.h termios.h unistd.h])
@@ -199,7 +189,7 @@ dnl Update flags
 dnl Sets CFLAGS to force optimization and debugging options, which isn't quite kosher
 dnl
 dnl AM_CPPFLAGS="-D_GNU_SOURCE -I\$(top_srcdir)/src -DLTFS_CONFIG_FILE='\"${sysconfdir}/ltfs.conf\"' -DLTFS_BASE_DIR='\"${prefix}\"'"
-dnl AM_CFLAGS="-Wall -Wsign-compare ${FUSE_MODULE_CFLAGS} ${UUID_MODULE_CFLAGS} ${LIBXML2_MODULE_CFLAGS} ${ICU_MODULE_CFLAGS} ${SNMP_MODULE_CFLAGS}"
+dnl AM_CFLAGS="-Wall -Wsign-compare ${FUSE_MODULE_CFLAGS} ${UUID_MODULE_CFLAGS} ${LIBXML2_MODULE_CFLAGS} ${ICU_MODULE_CFLAGS}"
 AM_CPPFLAGS="-D_GNU_SOURCE -DHPE_BUILD -I\$(top_srcdir)/src -DLTFS_CONFIG_FILE='\"${sysconfdir}/ltfs.conf\"'"
 AM_CFLAGS="-Wall -Wsign-compare ${FUSE_MODULE_CFLAGS} ${UUID_MODULE_CFLAGS} ${LIBXML2_MODULE_CFLAGS} ${ICU_MODULE_CFLAGS}"
 
@@ -263,7 +253,7 @@ fi
 dnl
 dnl Configure standard options
 dnl
-dnl AM_LDFLAGS="${AM_LDFLAGS} ${FUSE_MODULE_LIBS} ${UUID_MODULE_LIBS} ${LIBXML2_MODULE_LIBS} ${ICU_MODULE_LIBS} ${SNMP_MODULE_LIBS}"
+dnl AM_LDFLAGS="${AM_LDFLAGS} ${FUSE_MODULE_LIBS} ${UUID_MODULE_LIBS} ${LIBXML2_MODULE_LIBS} ${ICU_MODULE_LIBS}"
 AM_LDFLAGS="${AM_LDFLAGS} ${FUSE_MODULE_LIBS} ${UUID_MODULE_LIBS} ${LIBXML2_MODULE_LIBS} ${ICU_MODULE_LIBS}"
 CFLAGS="${CFLAGS} ${OPT_FLAGS}"
 

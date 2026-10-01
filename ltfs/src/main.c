@@ -71,7 +71,6 @@
 #include "libltfs/dcache.h"
 #include "libltfs/index_criteria.h"
 #if 0
-#include "libltfs/ltfssnmp.h"
 #endif /* 0 */
 #include "libltfs/kmi.h"
 #include "libltfs/tape.h"
@@ -530,7 +529,7 @@ int main(int argc, char **argv)
 	int ret, i, cmd_args_len;
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	struct ltfs_fuse_data *priv = (struct ltfs_fuse_data *) calloc(1, sizeof(struct ltfs_fuse_data));
-	char *lang, **mount_options, **snmp_options, *cmd_args;
+	char *lang, **mount_options, *cmd_args;
 	void *message_handle;
 
 	/* Suppress warning on Windows builds. */
@@ -578,32 +577,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	/* We don't use this in HPE-SOS. The code is present but it will always endup indicating that
-	 * snmp is disabled.
-	 */
-	/* Get snmp option value from configuration file */
-	snmp_options = config_file_get_options("snmp", priv->config);
-	if (snmp_options) {
-		priv->snmp_enabled = false;
-		for (i=0; snmp_options[i]; ++i) {
-			if (! strcmp(snmp_options[i], "enabled"))
-				priv->snmp_enabled = true;
-			else if (! strncmp(snmp_options[i], "deffile ", 8)) {
-				ret = asprintf(&priv->snmp_deffile, "%s", snmp_options[i]+8);
-				if (ret < 0) {
-					ltfsmsg(LTFS_ERR, "10001E", "library_main: snmp_deffile");
-					priv->snmp_enabled = false;
-					break;
-				}
-			}
-		}
-		if (priv->snmp_enabled) {
-#if 0
-			ltfs_snmp_init(priv->snmp_deffile);
-#endif /* 0 */
-		}
-	}
-	
 	/* Not supported on Windows. TODO: Verify this again.*/
 
 	/* Parse command line options again, this time for real */
@@ -843,12 +816,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	ret = single_drive_main(&args, priv);
-
-	/* Send a trap of LTFS termination */
-#if 0
-	if (priv->snmp_enabled)
-		ltfs_snmp_finish();
-#endif /* 0 */
 
 	/* Unload plugins */
 	if (priv->iosched_backend_name)

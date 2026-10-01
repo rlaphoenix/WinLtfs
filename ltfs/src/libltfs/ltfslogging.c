@@ -80,9 +80,6 @@
 #include "libltfs/ltfs_locking.h"
 #include "libltfs/ltfs_error.h"
 #include "queue.h"
-#if 0
-#include "ltfssnmp.h"
-#endif /* 0 */
 
 /* Some hard-coded message bits. */
 #define MSG_PREFIX_POSIX_TID   "%016llx LTFS%s "
