@@ -1050,28 +1050,6 @@ int single_drive_main(struct fuse_args *args, struct ltfs_fuse_data *priv)
 	ltfsmsg(LTFS_INFO, "14112I");
 	ltfsmsg(LTFS_INFO, "14113I");
 	CloseHandle(CreateThread(NULL, 0, shutdown_watch_thread, NULL, 0, NULL));
-	ret = fuse_main(args->argc, args->argv, &ltfs_ops, priv);
-
-	/*  Setup signal handler again to terminate cleanly */
-	ret = ltfs_set_signal_handlers();
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "10013E");
-		return 1;
-	}
-
-	/*
-	 * OSR
-	 *
-	 * In our MinGW environment, we stay running after the device is
-	 * dismounted/ejected. This processing is deferred until
-	 * ltfs_fuse_unmount
-	 *
-	 */
-
-	/* close the volume */
-
-
-	ltfs_unset_signal_handlers();
-
-	return ret;
+	/* Unmount (eject, device close) happens in ltfs_fuse_umount. */
+	return fuse_main(args->argc, args->argv, &ltfs_ops, priv);
 }

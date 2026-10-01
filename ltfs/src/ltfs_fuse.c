@@ -356,6 +356,9 @@ int ltfs_fuse_statfs(const char *path, struct fuse_statvfs *buf)
 	struct fuse_statvfs *stats = &priv->fs_stats;
 	struct device_capacity blockstat;
 
+	if (priv->mount_error)
+		return priv->mount_error;
+
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_STATFS), 0, 0);
 
 	memset(&blockstat, 0, sizeof(blockstat));
@@ -1453,12 +1456,32 @@ void * ltfs_fuse_mount(struct fuse_conn_info *conn)
 }
 
 /**
+ * FUSE init. WinFsp stores init's return value as private_data and then calls
+ * statfs, but ignores HPE's conn->reserved[0] error convention, so a failed
+ * ltfs_fuse_mount (which returns NULL) crashed the next callback. Always keep
+ * priv and record the failure for statfs to report.
+ */
+static void *ltfs_fuse_init(struct fuse_conn_info *conn)
+{
+	struct ltfs_fuse_data *priv = fuse_get_context()->private_data;
+
+	if (ltfs_fuse_mount(conn) != priv) {
+		int err = (int)conn->reserved[0];   /* set by most failure paths */
+		priv->mount_error = err < 0 ? errormap_fuse_error(err) : -EIO;
+	}
+	return priv;
+}
+
+/**
  * Unmount a filesystem. This function flushes all data to tape, makes the cartridge consistent,
  * closes the device, and frees the ltfs_volume field of the FUSE private data.
  */
 void ltfs_fuse_umount(void *userdata)
 {
 	struct ltfs_fuse_data *priv = userdata;
+
+	if (priv->mount_error)
+		return;
 
 	ltfs_request_trace(FUSE_REQ_ENTER(REQ_UNMOUNT), 0, 0);
 
@@ -1727,7 +1750,7 @@ static int ltfs_fuse_ioctl(const char *path, int cmd, void *arg,
 
 struct fuse_operations ltfs_ops = {
 	.ioctl       = ltfs_fuse_ioctl,
-	.init        = ltfs_fuse_mount,
+	.init        = ltfs_fuse_init,
 	.destroy     = ltfs_fuse_umount,
 	.getattr     = ltfs_fuse_getattr,
 	.fgetattr    = ltfs_fuse_fgetattr,

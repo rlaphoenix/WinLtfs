@@ -146,6 +146,7 @@ struct ltfs_fuse_data {
 	
     struct fuse_args *args;        /**< OSR - The arguments to the program */
     char drive_letter[8];          /**< mount drive letter without colon, e.g. "T" (empty if not a drive-letter mount) */
+	int mount_error;               /**< -errno if ltfs_fuse_mount failed, else 0 */
 };
 
 #ifdef __cplusplus
