@@ -91,8 +91,6 @@ struct ltfs_fuse_data {
 	mode_t dir_mode;               /**< All directories are assigned this mode */
 
 	/* overrides for the permission setup */
-	char *force_uid;               /**< Override for the uid */
-	char *force_gid;               /**< Override for the gid */
 	char *force_umask;             /**< Override for the umask */
 	char *force_fmask;             /**< Override for the file umask */
 	char *force_dmask;             /**< Override for the directory umask */

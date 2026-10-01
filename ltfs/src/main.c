@@ -119,8 +119,6 @@ static struct fuse_opt ltfs_options[] = {
 	LTFS_OPT("umask=%s",               force_umask, 0),
 	LTFS_OPT("fmask=%s",               force_fmask, 0),
 	LTFS_OPT("dmask=%s",               force_dmask, 0),
-	LTFS_OPT("uid=%s",                 force_uid, 0),
-	LTFS_OPT("gid=%s",                 force_gid, 0),
 	LTFS_OPT("min_pool_size=%s",       force_min_pool, 0),
 	LTFS_OPT("max_pool_size=%s",       force_max_pool, 0),
 	LTFS_OPT("rules=%s",               index_rules, 0),
@@ -250,16 +248,6 @@ mode_t parse_mode(char *input)
 	return ((input[0] - '0') << 6) | ((input[1] - '0') << 3) | (input[2] - '0');
 }
 
-uid_t parse_uid(const char *input)
-{
-	return 0;
-}
-
-gid_t parse_gid(const char *input)
-{
-	return 0;
-}
-
 size_t parse_size_t(const char *input)
 {
 	const char *i;
@@ -285,30 +273,6 @@ int permissions_setup(struct ltfs_fuse_data *priv)
 	priv->mount_gid = 0;
 	priv->file_mode = S_IFREG | 0777;
 	priv->dir_mode = S_IFDIR | 0777;
-
-	/* User ID override */
-	if (priv->force_uid) {
-		priv->perm_override = true;
-		priv->mount_uid = parse_uid(priv->force_uid);
-		if (priv->mount_uid == (uid_t)-1) {
-			/* Invalid UID */
-			ltfsmsg(LTFS_ERR, "14079E", priv->force_uid);
-			return -1;
-		}
-		free(priv->force_uid);
-	}
-
-	/* Group ID override */
-	if (priv->force_gid) {
-		priv->perm_override = true;
-		priv->mount_gid = parse_gid(priv->force_gid);
-		if (priv->mount_gid == (gid_t)-1) {
-			/* Invalid GID */
-			ltfsmsg(LTFS_ERR, "14080E", priv->force_gid);
-			return -1;
-		}
-		free(priv->force_gid);
-	}
 
 	/* Global (file and directory) permissions override */
 	if (priv->force_umask) {

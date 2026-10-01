@@ -117,8 +117,6 @@ root:table {
 		14076I:string { "Attempting to mount the cartridge without EOD existence check" }
 		14077I:string { "The cartridge will be mounted as read-only" }
 		// unused 14078E:string { "CM in the cartridge might be corrupted. Try to run ltfs with the \"-o force_mount_no_eod\" option." }
-		14079E:string { "Invalid uid \'%s\' (must be a positive integer or valid user name)" }
-		14080E:string { "Invalid gid \'%s\' (must be a positive integer or valid group name)" }
 		//unused 14081E:string { "Failed to create a dentry cache view for cartridge \"%s\"" }
 		//unused 14082E:string { "Failed to enable dentry cache for cartridge \"%s\"" }
 		//unused 14083E:string { "Failed to remove existing dentry cache for cartridge \"%s\" (%d)" }
