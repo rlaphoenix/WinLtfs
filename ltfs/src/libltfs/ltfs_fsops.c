@@ -80,13 +80,10 @@ int ltfs_fsops_open(const char *path, bool open_write, bool use_iosched, struct 
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	if (open_write) {
-		ret = tape_read_only(vol->device, ltfs_part_id2num(ltfs_ip_id(vol), vol));
-		if (ret == 0 || ret == -LTFS_LESS_SPACE)
-			ret = tape_read_only(vol->device, ltfs_part_id2num(ltfs_dp_id(vol), vol));
-		/* Check for a read-only volume, but ignore ENOSPC: file systems do
-		 * not typically check for medium full on open.
-		 */
-		if (ret < 0 && (ret != -LTFS_LESS_SPACE || ret != -LTFS_NO_SPACE))
+		/* Refuse if write-protected, volume-locked or past early warning;
+		 * programmable early warning still has room, so allow it. */
+		ret = ltfs_get_tape_readonly(vol);
+		if (ret < 0 && ret != -LTFS_LESS_SPACE)
 			return ret;
 	}
 
