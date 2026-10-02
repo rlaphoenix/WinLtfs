@@ -63,8 +63,9 @@ echo "==> configure"
 # 2 GiB (offset 0x80000000 wraps negative). win_util.h's late "#define
 # _FILE_OFFSET_BITS 64" lands after <sys/types.h> and is too late to matter.
 ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 \
-    --with-winfsp="$ROOT/build/wfsp" \
-    CFLAGS="-D_FILE_OFFSET_BITS=64 -DWINVER=0x0601 -D_WIN32_WINNT=0x0601"
+    --with-winfsp="$ROOT/build/wfsp" --enable-fast \
+    CFLAGS="-D_FILE_OFFSET_BITS=64 -DWINVER=0x0601 -D_WIN32_WINNT=0x0601" \
+    LDFLAGS="-Wl,-s"
 
 echo
 echo "Setup complete. Build with: ./build.sh"

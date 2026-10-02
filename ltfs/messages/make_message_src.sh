@@ -29,7 +29,8 @@ make_obj() {
 	# Modern ICU pkgdata requires an options file (-O) for static/dll modes
 	PKGDATA_INC=${PKGDATA_INC:-/mingw64/lib/icu/current/pkgdata.inc}
 	if [ -f "$PKGDATA_INC" ]; then
-		PKGDATA_OPTS="-O $PKGDATA_INC"
+		sed '/^GENLIB=/s/ -Wl,--out-implib=/ -s&/' "$PKGDATA_INC" > pkgdata.inc
+		PKGDATA_OPTS="-O pkgdata.inc"
 	else
 		PKGDATA_OPTS=
 	fi
