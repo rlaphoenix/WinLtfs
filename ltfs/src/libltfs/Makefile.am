@@ -82,7 +82,9 @@ libltfs_la_DEPENDENCIES = ../../messages/libbin_libltfs.a ../../messages/libinte
 #
 # Package data must be linked as a library (-lbin_libltfs)
 #
-libltfs_la_LIBADD = -L../../messages -lbin_libltfs -linternal_error -lole32 -lpthread -lxml2 -lrpcrt4 -loleaut32 -licuuc -lws2_32
-libltfs_la_CPPFLAGS = @AM_CPPFLAGS@ -I ..
-libltfs_la_LDFLAGS = @AM_LDFLAGS@ -avoid-version -no-undefined
+libltfs_la_LIBADD = -L../../messages -lbin_libltfs -linternal_error -lole32 -lpthread -lrpcrt4 -loleaut32 -lws2_32
+libltfs_la_CPPFLAGS = @AM_CPPFLAGS@ -I .. -DU_STATIC_IMPLEMENTATION -DLIBXML_STATIC
+libltfs_la_LDFLAGS = $(FUSE_MODULE_LIBS) $(UUID_MODULE_LIBS) -avoid-version -no-undefined -static-libgcc \
+	-Wl,-Bstatic,-lxml2,-liconv,-lz,-licuuc,-licudt,-lstdc++ \
+	-Wl,-Bdynamic,-lbcrypt,-lws2_32,-lpthread
 
