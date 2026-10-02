@@ -65,7 +65,6 @@ root:table {
 		14024E:string { "Cannot get extended attribute: position option must be zero" }
 		//unused 14025D:string { "Cannot read directory: no file handle provided" }
 		14026D:string { "Cannot read directory: no buffer space" }
-		14027E:string { "Cannot read directory: convert to system locale failed (%s, %d)" }
 		14028W:string { "Cannot initialize I/O scheduler. The scheduler is disabled. Performance might decrease and memory usage might increase." }
 		14029I:string { "Ready to receive file system requests" }
 		14030D:string { "FUSE fgetattr for \'%s\'" }

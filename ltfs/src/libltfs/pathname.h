@@ -87,7 +87,6 @@ extern "C" {
 
 
 int pathname_format(const char *name, char **new_name, bool validate, bool path);
-int pathname_unformat(const char *name, char **new_name);
 int pathname_caseless_match(const char *name1, const char *name2, int *result);
 int pathname_prepare_caseless(const char *name, UChar **new_name, bool use_nfc);
 int pathname_normalize(const char *name, char **new_name);

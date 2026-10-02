@@ -235,7 +235,6 @@ root:table {
 		11139E:string { "Cannot remove extended attribute: failed to look up the path (%d)" }
 		11140E:string { "Cannot remove extended attribute: failed to look up the xattr (%d)" }
 		11141E:string { "Cannot list physical xattrs: failed to generate namespace prefix (%d)" }
-		11142E:string { "Cannot list physical xattrs: failed to convert key to system locale (%d)" }
 		//unused 11143E
 		//unused 11144E:string { "Cannot list physical xattrs: failed to convert key to system locale (%d)" }
 		11145E:string { "Cannot get attribute %s: failed to generate the time string" }
@@ -343,8 +342,6 @@ root:table {
 		11247E:string { "Cannot convert system locale to UTF-16: failed to set up converter (%d)" }
 		11248E:string { "Cannot convert system locale to UTF-16: failed to get output buffer size (%d)" }
 		11249E:string { "Cannot convert system locale to UTF-16: failed to fill output buffer (%d)" }
-		11250E:string { "Cannot convert UTF-8 to system locale: failed to get output buffer size (%d)" }
-		11251E:string { "Cannot convert UTF-8 to system locale: failed to fill output buffer (%d)" }
 		11252D:string { "libltfs write to \'%s\': offset = %lld, count = %u" }
 		//unused 11253D:string { "libltfs write to \'%s\': offset = %lld, count = %u (no extent update)" }
 		11254D:string { "libltfs read from \'%s\': offset = %lld, count = %u" }

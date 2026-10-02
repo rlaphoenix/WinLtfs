@@ -587,38 +587,29 @@ void _xattr_unlock_dentry(const char *name, bool modify, struct dentry *d, struc
 int _xattr_list_physicals(struct dentry *d, char *list, size_t size)
 {
 	struct xattr_info *entry;
-	char *prefix = "\0", *new_name;
+	char *prefix = "\0";
 	int prefixlen = 0, namelen;
-	int ret = 0, nbytes = 0;
+	int nbytes = 0;
 
 
 	TAILQ_FOREACH(entry, &d->xattrlist, list) {
 
         update_xattr_safe_name(entry);  // HPE MD added to support SNIA spec 2.4.0 sect 7.4
 
-        ret = pathname_unformat(entry->key, &new_name);
-		if (ret < 0) {
-			ltfsmsg(LTFS_ERR, "11142E", ret);
-			goto out;
-		}
-
-		if(strncmp(new_name, LTFS_LIVELINK_EA_NAME, strlen(LTFS_LIVELINK_EA_NAME) + 1)) {
-			namelen = strlen(new_name);
+		/* Names are listed as stored in the index (UTF-8), as WinFsp's FUSE layer expects */
+		if(strncmp(entry->key, LTFS_LIVELINK_EA_NAME, strlen(LTFS_LIVELINK_EA_NAME) + 1)) {
+			namelen = strlen(entry->key);
 
 			nbytes += prefixlen + namelen + 1;
 			if (size && (size_t)nbytes <= size) {
 				memcpy(list, prefix, prefixlen);
 				list += prefixlen;
-				memcpy(list, new_name, namelen);
+				memcpy(list, entry->key, namelen);
 				list += namelen + 1;
 			}
 		}
-		free(new_name);
 	}
 
-out:
-	if (ret < 0)
-		return ret;
 	return nbytes;
 }
 

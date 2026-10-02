@@ -856,21 +856,9 @@ int ltfs_fuse_rename(const char *from, const char *to)
 
 int _ltfs_fuse_filldir(void *buf, const char *name, void *priv)
 {
-	int ret;
-	char *new_name;
 	fuse_fill_dir_t filler = priv;
 
-	ret = pathname_unformat(name, &new_name);
-	if (ret < 0) {
-		ltfsmsg(LTFS_ERR, "14027E", "unformat", ret);
-		return ret;
-	}
-
-	ret = filler(buf, name, NULL, 0);
-
-	if (new_name)
-		free(new_name); new_name = NULL;
-	if (ret)
+	if (filler(buf, name, NULL, 0))
 		return -ENOBUFS;
 	return 0;
 }

@@ -99,7 +99,6 @@ int _pathname_normalize_nfd_icu(const UChar *src, UChar **dest);
 int _pathname_utf8_to_utf16_icu(const char *src, UChar **dest);
 int _pathname_utf16_to_utf8_icu(const UChar *src, char **dest);
 int _pathname_system_to_utf16_icu(const char *src, UChar **dest);
-int _pathname_utf8_to_system_icu(const char *src, char **dest);
 int _pathname_normalize_utf8_nfd_icu(const char *src, char **dest);
 
 
@@ -121,23 +120,6 @@ int pathname_format(const char *name, char **new_name, bool validate, bool allow
 	CHECK_ARG_NULL(new_name, -LTFS_NULL_ARG);
 
 	ret = _pathname_format_icu(name, new_name, validate, allow_slash);
-	return ret;
-}
-
-/**
- * Convert a path name in the canonical LTFS form back to the system locale.
- * @param name path to convert
- * @param new_name on success, contains converted name in an newly allocated buffer.
- * @return 0 on success or a negative value on error.
- */
-int pathname_unformat(const char *name, char **new_name)
-{
-	int ret;
-
-	CHECK_ARG_NULL(name, -LTFS_NULL_ARG);
-	CHECK_ARG_NULL(new_name, -LTFS_NULL_ARG);
-
-	ret = _pathname_utf8_to_system_icu(name, new_name);
 	return ret;
 }
 
@@ -890,51 +872,5 @@ int _pathname_system_to_utf16_icu(const char *src, UChar **dest)
 	}
 
 	ucnv_close(syslocale);
-	return 0;
-}
-
-/**
- * Convert a path name in the canonical LTFS form back to the system locale.
- * TODO: better performance by caching converters and using a mutex?
- * @param name path to convert
- * @param new_name on success, contains converted name in an newly allocated buffer.
- * @return 0 on success or a negative value on error.
- */
-int _pathname_utf8_to_system_icu(const char *src, char **dest)
-{
-	const char *syslocale;
-	UErrorCode err = U_ZERO_ERROR;
-	int32_t destlen;
-
-	syslocale = "UTF-8";
-	if (! strcmp(syslocale, "UTF-8")) {
-		*dest = strdup(src);
-		if (! *dest)
-			return -LTFS_NO_MEMORY;
-		return 0;
-	}
-
-	/* System locale doesn't match internal usage, so really do the conversion */
-	destlen = ucnv_convert(NULL, "UTF-8", NULL, 0, src, -1, &err);
-	if (U_FAILURE(err) && err != U_BUFFER_OVERFLOW_ERROR) {
-		ltfsmsg(LTFS_ERR, "11250E", err);
-		return -LTFS_ICU_ERROR;
-	}
-	err = U_ZERO_ERROR;
-
-	*dest = malloc(destlen + 1);
-	if (! *dest) {
-		ltfsmsg(LTFS_ERR, "10001E", __FUNCTION__);
-		return -LTFS_NO_MEMORY;
-	}
-
-	ucnv_convert(NULL, "UTF-8", *dest, destlen + 1, src, -1, &err);
-	if (U_FAILURE(err)) {
-		ltfsmsg(LTFS_ERR, "11251E", err);
-		free(*dest);
-		*dest = NULL;
-		return -LTFS_ICU_ERROR;
-	}
-
 	return 0;
 }
