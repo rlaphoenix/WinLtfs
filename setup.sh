@@ -41,6 +41,32 @@ cp -r "$WINFSP/inc" "$ROOT/build/wfsp/"
 cp "$WINFSP/lib/winfsp-x64.lib" "$ROOT/build/wfsp/lib/libwinfsp-x64.a"
 cp "$WINFSP/bin/winfsp-x64.dll" "$ROOT/build/wfsp/bin/"
 
+echo "==> Building trimmed ICU data into build/icu"
+ICU="$ROOT/build/icu"
+ICU_MAJOR=$(pkg-config --modversion icu-uc | cut -d. -f1)
+FULL="$ICU/full/icudt${ICU_MAJOR}l.dat"
+rm -rf "$ICU" && mkdir -p "$ICU/items" "$ICU/full"
+(cd "$ICU" && ar x "$MINGW_PREFIX/lib/libicudt.a" &&
+    objcopy -O binary --only-section=.rodata icudt*_dat.o "$FULL")
+printf '%s\n' brkitr/char.brk brkitr/root.res > "$ICU/keep.txt"
+icupkg -x "$ICU/keep.txt" -d "$ICU/items" "$FULL"
+cat > "$ICU/root.txt" <<'EOF'
+root{
+    boundaries{
+        grapheme:process(dependency){"char.brk"}
+    }
+}
+EOF
+genrb -q -d "$ICU/items/brkitr" "$ICU/root.txt"
+icupkg -tl -s "$ICU/items" -a "$ICU/keep.txt" new "$ICU/icudt${ICU_MAJOR}l.dat"
+genccode -a gcc-mingw64 -e "icudt$ICU_MAJOR" -d "$ICU" "$ICU/icudt${ICU_MAJOR}l.dat" >/dev/null
+gcc -c "$ICU/icudt${ICU_MAJOR}l_dat.S" -o "$ICU/icudt_ltfs.o"
+ar rcs "$ICU/libicudt_ltfs.a" "$ICU/icudt_ltfs.o"
+rm -rf "$ICU/items" "$ICU/full" "$ICU"/*.dat "$ICU"/*_dat.o "$ICU/root.txt"
+gcc -DU_STATIC_IMPLEMENTATION "$ROOT/resources/icu-data-check.c" -o "$ICU/check.exe" \
+    -static -licuuc "$ICU/libicudt_ltfs.a" -lstdc++
+"$ICU/check.exe"
+
 echo "==> autoreconf (regenerating 2012-era autotools files)"
 cd "$SRC"
 # Filter autoreconf's noise for display, but abort on a real failure: the pipe

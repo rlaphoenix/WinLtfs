@@ -85,6 +85,6 @@ libltfs_la_DEPENDENCIES = ../../messages/libbin_libltfs.a ../../messages/libinte
 libltfs_la_LIBADD = -L../../messages -lbin_libltfs -linternal_error -lole32 -lpthread -lrpcrt4 -loleaut32 -lws2_32
 libltfs_la_CPPFLAGS = @AM_CPPFLAGS@ -I .. -DU_STATIC_IMPLEMENTATION -DLIBXML_STATIC
 libltfs_la_LDFLAGS = $(FUSE_MODULE_LIBS) $(UUID_MODULE_LIBS) -avoid-version -no-undefined -static-libgcc \
-	-Wl,-Bstatic,-lxml2,-liconv,-lz,-licuuc,-licudt,-lstdc++ \
+	-Wl,-Bstatic,-lxml2,-liconv,-lz,-licuuc,$(abs_top_srcdir)/../build/icu/libicudt_ltfs.a,-lstdc++ \
 	-Wl,-Bdynamic,-lbcrypt,-lws2_32,-lpthread
 
