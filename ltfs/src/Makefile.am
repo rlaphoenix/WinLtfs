@@ -43,7 +43,7 @@ bin_PROGRAMS = ltfs
 #
 # RC file linked to provides message data for the Event Log
 #
-ltfs_SOURCES = main.c ltfs_fuse.c ltfs_msgs.rc
+ltfs_SOURCES = main.c ltfs_fuse.c ltfs_msgs.rc app.rc
 ltfs_DEPENDENCIES = ../src/libltfs/libltfs.la ../messages/libbin_ltfs.a
 ltfs_LDADD = ../src/libltfs/libltfs.la -L../messages -lbin_ltfs -lbin_libltfs
 

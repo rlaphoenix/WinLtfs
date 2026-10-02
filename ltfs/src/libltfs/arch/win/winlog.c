@@ -95,13 +95,19 @@ void vsyslog(int priority, const char *format, va_list ap)
     }
     
     vsprintf(output_buf, format_buf, ap);
-    fprintf(stderr, "%s\n", output_buf);
 
-    /* 
-     * Flush the output so that the trace consumers see the messages
-     * immediately
-     */
+    /* A console decodes bytes in its own code page, so hand it Unicode instead */
+    HANDLE h = GetStdHandle(STD_ERROR_HANDLE);
+    DWORD n, mode;
+    wchar_t w[OUTPUT_BUF_SIZE];
     fflush(stderr);
+    if (GetConsoleMode(h, &mode) && (n = MultiByteToWideChar(CP_UTF8, 0, output_buf, -1, w, OUTPUT_BUF_SIZE))) {
+        w[n - 1] = L'\n';
+        WriteConsoleW(h, w, n, &n, NULL);
+    } else {
+        fprintf(stderr, "%s\n", output_buf);
+        fflush(stderr);
+    }
 
     WORD wType;
     switch (priority)

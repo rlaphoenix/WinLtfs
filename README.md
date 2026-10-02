@@ -1,6 +1,6 @@
 # WinLtfs
 
-[![License](https://img.shields.io/:license-LGPL%202.1-blue.svg)](https://github.com/rlaphoenix/winltfs/blob/master/LICENSE) ![Platform](https://img.shields.io/badge/platform-Windows%2064--bit-informational) ![LTO](https://img.shields.io/badge/LTO-5%2B-blue) ![LTFS](https://img.shields.io/badge/LTFS-2.4.0-blue) [![WinFsp](https://img.shields.io/badge/WinFsp-2.1-informational)](https://winfsp.dev)
+[![License](https://img.shields.io/:license-LGPL%202.1-blue.svg)](https://github.com/rlaphoenix/winltfs/blob/master/LICENSE) ![Platform](https://img.shields.io/badge/platform-Windows%2010%2B%20x64-informational) ![LTO](https://img.shields.io/badge/LTO-5%2B-blue) ![LTFS](https://img.shields.io/badge/LTFS-2.4.0-blue) [![WinFsp](https://img.shields.io/badge/WinFsp-2.1-informational)](https://winfsp.dev)
 
 Mount, Format, and Test LTFS tapes on Windows with [WinFsp](https://winfsp.dev).
 
@@ -16,7 +16,7 @@ Mount, Format, and Test LTFS tapes on Windows with [WinFsp](https://winfsp.dev).
 
 ## Features
 
-- 🪟 Supports Windows 7 to Windows 11 (64-bit only)
+- 🪟 Supports Windows 10 1903 or newer and Windows Server 2022 or newer (64-bit only)
 - 📼 LTO-5 to LTO-9 Support including WORM and Type-M
 - 💽 Mount LTO tapes as Virtual Drives
 - 🗂️ Format, Unformat, and Test LTO tapes

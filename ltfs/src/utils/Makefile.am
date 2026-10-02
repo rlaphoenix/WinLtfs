@@ -37,16 +37,16 @@ bin_PROGRAMS = mkltfs ltfsck unltfs
 noinst_HEADERS =
 
 mkltfs_SOURCES = mkltfs.c
-mkltfs_DEPENDENCIES = ../libltfs/libltfs.la ../../messages/libbin_mkltfs.a
-mkltfs_LDADD = -L../../messages ../libltfs/libltfs.la -lbin_mkltfs -lbin_libltfs 
+mkltfs_DEPENDENCIES = ../libltfs/libltfs.la ../../messages/libbin_mkltfs.a ../app.o
+mkltfs_LDADD = -L../../messages ../libltfs/libltfs.la -lbin_mkltfs -lbin_libltfs ../app.o
 mkltfs_CPPFLAGS = @AM_CPPFLAGS@ -I ..
 
 unltfs_SOURCES = unltfs.c
-unltfs_DEPENDENCIES = ../libltfs/libltfs.la ../../messages/libbin_mkltfs.a
-unltfs_LDADD = -L../../messages ../libltfs/libltfs.la -lbin_mkltfs -lbin_libltfs 
+unltfs_DEPENDENCIES = ../libltfs/libltfs.la ../../messages/libbin_mkltfs.a ../app.o
+unltfs_LDADD = -L../../messages ../libltfs/libltfs.la -lbin_mkltfs -lbin_libltfs ../app.o
 unltfs_CPPFLAGS = @AM_CPPFLAGS@ -I ..
 
 ltfsck_SOURCES = ltfsck.c
-ltfsck_DEPENDENCIES = ../libltfs/libltfs.la ../../messages/libbin_ltfsck.a
-ltfsck_LDADD = -L../../messages ../libltfs/libltfs.la -lbin_ltfsck -lbin_libltfs 
+ltfsck_DEPENDENCIES = ../libltfs/libltfs.la ../../messages/libbin_ltfsck.a ../app.o
+ltfsck_LDADD = -L../../messages ../libltfs/libltfs.la -lbin_ltfsck -lbin_libltfs ../app.o
 ltfsck_CPPFLAGS = @AM_CPPFLAGS@ -I ..
