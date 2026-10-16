@@ -453,6 +453,7 @@ int tape_load_tape(struct device_data *dev, void * const kmi_handle)
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
+	++dev->content_gen;
 
 	ret = tape_is_cartridge_loadable(dev);
 	if (ret < 0)
@@ -583,6 +584,7 @@ int tape_unload_tape(struct device_data *dev)
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 	CHECK_ARG_NULL(dev->backend, -LTFS_NULL_ARG);
+	++dev->content_gen;
 
 	ltfsmsg(LTFS_INFO, "12022I");
 
@@ -1244,6 +1246,7 @@ ssize_t tape_write(struct device_data *dev, const char *buf, size_t count, bool 
 		return -LTFS_NULL_ARG;
 	}
 
+	++dev->content_gen;
 	ret = 0;
 	ltfs_mutex_lock(&dev->read_only_flag_mutex);
 	if (dev->write_protect) {
@@ -1349,6 +1352,7 @@ int tape_write_filemark(struct device_data *dev, uint8_t count, bool ignore_less
 		return -LTFS_NULL_ARG;
 	}
 
+	++dev->content_gen;
 	ret = 0;
 	ltfs_mutex_lock(&dev->read_only_flag_mutex);
 	if (dev->write_protect)
@@ -1466,6 +1470,7 @@ int tape_erase(struct device_data *dev, bool long_erase)
 
 	CHECK_ARG_NULL(dev, -LTFS_NULL_ARG);
 
+	++dev->content_gen;
 	ret = dev->backend->erase(dev->backend_data, &dev->position, long_erase);
 	if (ret < 0)
 		ltfsmsg(LTFS_ERR, "17149E", ret);

@@ -179,7 +179,6 @@ root:table {
 		11084E:string { "Cannot write index: failed to write a trailing file mark (%d). The medium is in an inconsistent state; unmount and run ltfsck." }
 		11085E:string { "Cannot read: failed to determine medium position (%d)" }
 		11086E:string { "Cannot read: failed to locate (%d) to partition %c, record %llu" }
-		11087E:string { "Cannot read: expected %u bytes from cache, but received %lu bytes" }
 		11088E:string { "Cannot read: failed to get a block from the medium (%d)" }
 		11089E:string { "Cannot read: expected %u bytes from the medium, but received %zd bytes" }
 		11090W:string { "Data partition identifier requested on an uninitialized volume" }

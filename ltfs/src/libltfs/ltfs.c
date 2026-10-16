@@ -398,8 +398,8 @@ void _ltfs_volume_free(bool force, struct ltfs_volume **volume)
 			free((*volume)->mam_attr.barcode);
 			(*volume)->mam_attr.barcode = NULL;
 		}
-		if ((*volume)->last_block)
-			free((*volume)->last_block);
+		for (int i = 0; i < LTFS_READ_CACHE_BLOCKS; i++)
+			free((*volume)->read_cache[i].buf);
 		if ((*volume)->creator)
 			free((*volume)->creator);
 		if ((*volume)->mountpoint)
@@ -2985,6 +2985,7 @@ int ltfs_revalidate(bool have_write_lock, struct ltfs_volume *vol)
 	CHECK_ARG_NULL(vol, -LTFS_NULL_ARG);
 
 	ltfsmsg(LTFS_DEBUG, "11312D");
+	++vol->device->content_gen; /* drop cached reads; the medium may have changed */
 
 	/* Block other libltfs operations until revalidation finishes */
 	ltfs_thread_mutex_lock(&vol->reval_lock);

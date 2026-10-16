@@ -94,6 +94,7 @@ struct device_data {
 	bool physical_write_protect;          /**< Is the write protect switch on the cartridge set? */
 	bool fence;                           /**< Are device lock requests blocked? */
 	bool append_only_mode;                /**< Is in the append only mode? */
+	uint64_t content_gen;                 /**< Bumped whenever the medium may hold other data: writes, filemarks, erase, load, unload */
 	struct ltfs_timespec previous_exist;  /**< Previous time to be confirm drive connection presence */
 
 	struct tape_ops *backend;             /**< Backend functions */

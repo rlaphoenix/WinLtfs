@@ -498,15 +498,82 @@ start:
 	return ret;
 }
 
+/**
+ * Get tape block @pos of a file extent from the read cache, or read it into the least
+ * recently used cache entry, seeking only if the head is not already there.
+ * The caller must hold the device lock.
+ * @param partial true if the block may be shorter than the volume block size
+ * @param out on success, the cache entry holding the block
+ * @return 0 on success or a negative value on error.
+ */
+static int _ltfs_fsraw_read_block(const struct tape_offset *pos, bool partial,
+	struct ltfs_volume *vol, struct ltfs_read_cache **out)
+{
+	struct ltfs_read_cache *c, *victim = NULL;
+	struct tc_position curpos, seekpos;
+	ssize_t nread;
+	int i, ret;
+
+	for (i = 0; i < LTFS_READ_CACHE_BLOCKS; i++) {
+		c = &vol->read_cache[i];
+		if (c->size && c->pos.partition == pos->partition && c->pos.block == pos->block &&
+			c->content_gen == vol->device->content_gen) {
+			c->last_used = ++vol->read_cache_clock;
+			*out = c;
+			return 0;
+		}
+		if (! victim || c->last_used < victim->last_used)
+			victim = c;
+	}
+
+	if (! victim->buf) {
+		victim->buf = malloc(vol->label->blocksize);
+		if (! victim->buf) {
+			ltfsmsg(LTFS_ERR, "10001E", "ltfs_fsraw_read: block cache");
+			return -LTFS_NO_MEMORY;
+		}
+	}
+	victim->size = 0; /* empty unless the read below succeeds */
+
+	ret = tape_get_position(vol->device, &curpos);
+	if (ret < 0) {
+		ltfsmsg(LTFS_ERR, "11085E", ret);
+		return ret;
+	}
+	seekpos.partition = ltfs_part_id2num(pos->partition, vol);
+	seekpos.block = pos->block;
+	if (curpos.partition != seekpos.partition || curpos.block != seekpos.block) {
+		ret = tape_seek(vol->device, &seekpos);
+		if (ret < 0) {
+			ltfsmsg(LTFS_ERR, "11086E", ret, pos->partition, seekpos.block);
+			return ret;
+		}
+	}
+
+	nread = tape_read(vol->device, victim->buf, vol->label->blocksize, partial, vol->kmi_handle);
+	if (nread < 0) {
+		ltfsmsg(LTFS_ERR, "11088E", (int)nread);
+		return nread;
+	}
+
+	victim->pos = *pos;
+	victim->size = nread;
+	victim->content_gen = vol->device->content_gen;
+	victim->last_used = ++vol->read_cache_clock;
+	*out = victim;
+	return 0;
+}
+
 ssize_t ltfs_fsraw_read(struct dentry *d, char *buf, size_t count, off_t offset,
 	struct ltfs_volume *vol)
 {
 	int ret;
 	uint64_t next_off, last_off;
-	ssize_t nread, ncopy;
+	ssize_t ncopy;
 	size_t read_count;
 	struct extent_info *entry;
-	struct tc_position seekpos, curpos;
+	struct tape_offset blockpos;
+	struct ltfs_read_cache *block = NULL;
 	uint64_t firstbyte, lastbyte, blockbytes;
 	uint64_t entry_fileoffset_end;
 	unsigned long blocksize;
@@ -542,16 +609,6 @@ start:
 		return ret;
 	}
 
-	/* allocate the last block cache if necessary */
-	if (! vol->last_block) {
-		vol->last_block = malloc(vol->label->blocksize);
-		if (! vol->last_block) {
-			ltfsmsg(LTFS_ERR, "10001E", "ltfs_fsraw_read: block cache");
-			ret = -LTFS_NO_MEMORY;
-			goto out_unlock;
-		}
-	}
-
 	blocksize = vol->label->blocksize;
 	next_off = (uint64_t)offset;
 	last_off = (uint64_t)offset + count;
@@ -576,33 +633,13 @@ start:
 
 		/* Read any needed data from this extent */
 		if (entry_fileoffset_end > next_off) {
-			/* Compute current position */
-			ret = tape_get_position(vol->device, &curpos);
-			if (ret < 0) {
-				ltfsmsg(LTFS_ERR, "11085E", ret);
-				goto out_unlock;
-			}
-
-			/* Compute target position */
-			seekpos.partition = ltfs_part_id2num(entry->start.partition, vol);
-			seekpos.block = entry->start.block +
+			blockpos.partition = entry->start.partition;
+			blockpos.block = entry->start.block +
 				(next_off - entry->fileoffset + entry->byteoffset) / blocksize;
-
-			/* Seek if required */
-			if ((curpos.partition != seekpos.partition || curpos.block != seekpos.block) &&
-				! (curpos.partition == seekpos.partition && curpos.block == seekpos.block + 1 &&
-				   entry->start.partition == vol->last_pos.partition &&
-				   seekpos.block == vol->last_pos.block)) {
-				ret = tape_seek(vol->device, &seekpos);
-				if (ret < 0) {
-					ltfsmsg(LTFS_ERR, "11086E", ret, entry->start.partition, seekpos.block);
-					goto out_unlock;
-				}
-			}
 
 			/* Read from the extent until end of extent or output buffer full */
 			firstbyte = entry->fileoffset - entry->byteoffset +
-				(seekpos.block - entry->start.block) * blocksize;
+				(blockpos.block - entry->start.block) * blocksize;
 			lastbyte = firstbyte;
 			while (entry_fileoffset_end > next_off && read_count < count) {
 				lastbyte += blocksize;
@@ -610,48 +647,24 @@ start:
 					lastbyte = entry_fileoffset_end;
 				blockbytes = lastbyte - firstbyte;
 
-				/* Read this block into a temp buffer or return the existing contents */
-				if (entry->start.partition == vol->last_pos.partition &&
-					seekpos.block == vol->last_pos.block &&
-					(seekpos.partition == curpos.partition && seekpos.block + 1 == curpos.block)) {
-					if (vol->last_size < blockbytes) {
-						ltfsmsg(LTFS_ERR, "11087E", blockbytes, vol->last_size);
-						ret = -LTFS_SMALL_BLOCK;
-						goto out_unlock;
-					}
-
-				} else {
-					if (blocksize == blockbytes)
-						nread = tape_read(vol->device, vol->last_block, blocksize, false,
-							vol->kmi_handle);
-					else
-						nread = tape_read(vol->device, vol->last_block, blocksize, true,
-							vol->kmi_handle);
-
-					if (nread < 0) {
-						ret = nread;
-						ltfsmsg(LTFS_ERR, "11088E", ret);
-						goto out_unlock;
-					} else if ((size_t) nread < blockbytes) {
-						ltfsmsg(LTFS_ERR, "11089E", blockbytes, (unsigned long)nread);
-						ret = -LTFS_SMALL_BLOCK;
-						goto out_unlock;
-					}
-
-					vol->last_pos.partition = entry->start.partition;
-					vol->last_pos.block = seekpos.block;
-					vol->last_size = nread;
-					++curpos.block;
+				ret = _ltfs_fsraw_read_block(&blockpos, blockbytes != blocksize, vol, &block);
+				if (ret < 0)
+					goto out_unlock;
+				if (block->size < blockbytes) {
+					ltfsmsg(LTFS_ERR, "11089E", blockbytes, (ssize_t)block->size);
+					block->size = 0; /* don't keep a short read; retry the tape next time */
+					ret = -LTFS_SMALL_BLOCK;
+					goto out_unlock;
 				}
 
 				/* Copy data into output buffer */
 				ncopy = (lastbyte > last_off ? last_off : lastbyte) - next_off;
-				memcpy(buf + read_count, vol->last_block + (next_off - firstbyte), ncopy);
+				memcpy(buf + read_count, block->buf + (next_off - firstbyte), ncopy);
 
 				firstbyte += blocksize;
 				next_off += ncopy;
 				read_count += ncopy;
-				++seekpos.block;
+				++blockpos.block;
 			}
 		}
 	}

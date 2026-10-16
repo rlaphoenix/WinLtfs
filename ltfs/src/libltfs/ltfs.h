@@ -215,6 +215,17 @@ struct tape_offset {
 	char partition;
 };
 
+#define LTFS_READ_CACHE_BLOCKS 4
+
+/** A tape block cached by ltfs_fsraw_read */
+struct ltfs_read_cache {
+	char *buf;                 /**< Block contents, NULL until first used */
+	struct tape_offset pos;    /**< Logical position of the block */
+	unsigned long size;        /**< Bytes read into buf; 0 means the entry is empty */
+	uint64_t content_gen;      /**< device->content_gen when read; stale once it changes */
+	uint64_t last_used;        /**< read_cache_clock at last use */
+};
+
 /**
  * Extent information
  */
@@ -373,11 +384,12 @@ struct ltfs_volume {
 	bool skip_eod_check;           /**< Skip EOD existance check? */
 	bool ignore_wrong_version;     /**< Ignore wrong index version while seeking index? */
 
-	/* A 1-block read cache, used to prevent reading the same block from tape over and over.
-	 * You MUST hold the tape device lock before accessing this buffer. */
-	struct tape_offset last_pos;   /**< Position of last block read from the tape. */
-	unsigned long last_size;       /**< Size of last block read from the tape. */
-	char *last_block;              /**< Contents of last block read from the tape. */
+	/* Blocks recently read for file data, so small reads don't re-read a block from tape.
+	 * Several, so two readers of different files (an application and an anti-malware
+	 * scan, say) don't evict each other and make the drive seek back and forth.
+	 * You MUST hold the tape device lock before accessing these. */
+	struct ltfs_read_cache read_cache[LTFS_READ_CACHE_BLOCKS];
+	uint64_t read_cache_clock; /**< Use counter, for least-recently-used eviction */
 
 	/* Caches of cartridge health and capacity data. Take the device lock before using these. */
 	cartridge_health_info health_cache;
