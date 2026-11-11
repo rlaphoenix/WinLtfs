@@ -2296,7 +2296,14 @@ int ltotape_get_parameters (void *device, struct tc_drive_param *drive_param)
     sio->timeout_ms = (sio->family == drivefamily_lto) ? LTO_READBLOCKLIMITS_TIMEOUT : DAT_READBLOCKLIMITS_TIMEOUT;
     status = ltotape_scsiexec (sio);
 
-    if (status == 0) {
+    if (status != 0) {
+      /*
+       * Fallback for virtual HBAs (such as Microsoft iSCSI Initiator on desktop Windows)
+       * that reject CMDread_block_limits via IOCTL_SCSI_PASS_THROUGH_DIRECT with ERROR_INVALID_PARAMETER (0x57).
+       */
+      drive_param->max_blksize = LTOTAPE_MAX_TRANSFER_SIZE;
+      status = 0;
+    } else {
       drive_param->max_blksize = ((uint)blocklimits[1] << 16) + ((uint)blocklimits[2] << 8) + (uint)blocklimits[3];
       /*
        * Normally we'll limit the "max blocksize" to the preferred size; however
