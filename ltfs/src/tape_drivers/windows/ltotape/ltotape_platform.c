@@ -177,7 +177,27 @@ int ltotape_scsiexec (ltotape_scsi_io_type *scsi_io)
   }
 
   sptio.spt.TimeOutValue    = (scsi_io->timeout_ms / 1000);  /* convert ms to s */
-  sptio.spt.DataBuffer      = (PVOID) scsi_io->data;
+  if (sptio.spt.TimeOutValue == 0) sptio.spt.TimeOutValue = 10;
+  PVOID aligned_buf = NULL;
+  if (scsi_io->data_length > 0 && scsi_io->data != NULL) {
+    if (((uintptr_t)scsi_io->data & 15) != 0) {
+      aligned_buf = _aligned_malloc(scsi_io->data_length, 16);
+      if (aligned_buf != NULL) {
+        if (scsi_io->data_direction == HOST_WRITE) {
+          memcpy(aligned_buf, scsi_io->data, scsi_io->data_length);
+        }
+        sptio.spt.DataBuffer = aligned_buf;
+      } else {
+        sptio.spt.DataBuffer = (PVOID) scsi_io->data;
+      }
+    } else {
+      sptio.spt.DataBuffer = (PVOID) scsi_io->data;
+    }
+  } else {
+    sptio.spt.DataTransferLength = 0;
+    sptio.spt.DataIn = SCSI_IOCTL_DATA_UNSPECIFIED;
+    sptio.spt.DataBuffer = NULL;
+  }
   sptio.spt.SenseInfoOffset = offsetof(SPTTfrType, senseBuffer);
 
   for (i = 0; i < scsi_io->cdb_length; i++) {
@@ -220,6 +240,13 @@ int ltotape_scsiexec (ltotape_scsi_io_type *scsi_io)
                              NULL);
   }
     
+  if (aligned_buf != NULL) {
+    if (status != 0 && scsi_io->data_direction == HOST_READ && sptio.spt.DataTransferLength > 0) {
+      memcpy(scsi_io->data, aligned_buf, sptio.spt.DataTransferLength);
+    }
+    _aligned_free(aligned_buf);
+    aligned_buf = NULL;
+  }
   if (status == 0) {    
     syserr = GetLastError();
 
